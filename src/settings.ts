@@ -23,7 +23,7 @@ export function rgbToHex(c: [number, number, number]): string {
   return `#${h(c[0])}${h(c[1])}${h(c[2])}`
 }
 
-function hexToRgb(hex: string): [number, number, number] {
+export function hexToRgb(hex: string): [number, number, number] {
   const v = parseInt(hex.slice(1), 16)
   return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255]
 }
@@ -36,6 +36,7 @@ export class SettingsPanel {
   private inp: Record<string, HTMLInputElement> = {}
   private sel: Record<string, HTMLSelectElement> = {}
   private val: Record<string, HTMLElement> = {}
+  private copyBtn!: HTMLButtonElement
   private lastSync = ''
 
   constructor(lodHooks: SettingsLodHooks) {
@@ -84,7 +85,7 @@ export class SettingsPanel {
       ${this.row('radius', 'Sphere radius', '<input type="range" id="set-radius" min="0.02" max="1.2" step="0.01">')}
       ${this.row('far', 'View distance', '<input type="range" id="set-far" min="100" max="1500" step="10">')}
       ${this.row('speed', 'Move speed', '<input type="range" id="set-speed" min="0" max="1" step="0.005">')}
-      ${this.row('sens', 'Sensitivity', '<input type="range" id="set-sens" min="0.1" max="3" step="0.05">')}
+      ${this.row('sens', 'Mouse sensitivity', '<input type="range" id="set-sens" min="0.1" max="3" step="0.05">')}
       ${this.row('fov', 'Field of view', '<input type="range" id="set-fov" min="40" max="100" step="1">')}
       <div class="row">
         <span>LOD</span>
@@ -98,6 +99,12 @@ export class SettingsPanel {
       <div class="row"><span>Depth-cue fog</span><input type="checkbox" id="set-fog"></div>
       <div class="row"><span>Subtle shading</span><input type="checkbox" id="set-shade"></div>
       <div class="row"><span>Axes &amp; outline</span><input type="checkbox" id="set-axes"></div>
+      <h3>Debug</h3>
+      <div class="row"><span>Dist/normal</span><input type="checkbox" id="set-debug"></div>
+      <div style="margin:4px 0 2px;color:#666;font-size:11px;line-height:1.4;">
+        R = distance (white = close, scale 0&ndash;8 units) &middot; G = |normal.x| &middot; B = |normal.y|
+      </div>
+      <button id="set-copy" type="button">Copy link</button>
     `
     const q = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T
     this.inp.spacing = q<HTMLInputElement>('set-spacing')
@@ -113,6 +120,8 @@ export class SettingsPanel {
     this.inp.fog = q<HTMLInputElement>('set-fog')
     this.inp.shade = q<HTMLInputElement>('set-shade')
     this.inp.axes = q<HTMLInputElement>('set-axes')
+    this.inp.debug = q<HTMLInputElement>('set-debug')
+    this.copyBtn = q<HTMLButtonElement>('set-copy')
     for (const id of ['spacing', 'radius', 'far', 'speed', 'sens', 'fov', 'scale', 'bg']) {
       this.val[id] = q<HTMLElement>(`v-${id}`)
     }
@@ -151,7 +160,7 @@ export class SettingsPanel {
       this.sync(true)
     })
     this.sel.scale.addEventListener('change', () => {
-      config.renderScale = Number(this.sel.scale.value)
+      config.userRenderScale = Number(this.sel.scale.value)
       this.sync(true)
     })
     this.inp.bg.addEventListener('input', () => {
@@ -169,6 +178,20 @@ export class SettingsPanel {
     this.inp.axes.addEventListener('change', () => {
       config.axes = this.inp.axes.checked
       this.sync(true)
+    })
+    this.inp.debug.addEventListener('change', () => {
+      config.debugView = this.inp.debug.checked
+      this.sync(true)
+    })
+    this.copyBtn.addEventListener('click', () => {
+      const clip = navigator.clipboard
+      if (!clip) return
+      void clip.writeText(window.location.href).then(() => {
+        this.copyBtn.textContent = 'Copied!'
+        window.setTimeout(() => {
+          this.copyBtn.textContent = 'Copy link'
+        }, 1500)
+      })
     })
   }
 
@@ -194,6 +217,7 @@ export class SettingsPanel {
       config.fog,
       config.shading,
       config.axes,
+      config.debugView,
     ])
     if (!force && key === this.lastSync) return
     this.lastSync = key
@@ -208,11 +232,12 @@ export class SettingsPanel {
     this.inp.lodauto.checked = lod.auto
     this.sel.lodk.value = String(lod.k)
     this.sel.lodk.disabled = lod.auto
-    this.sel.scale.value = String(config.renderScale)
+    this.sel.scale.value = String(config.userRenderScale)
     this.inp.bg.value = rgbToHex(config.bg)
     this.inp.fog.checked = config.fog
     this.inp.shade.checked = config.shading
     this.inp.axes.checked = config.axes
+    this.inp.debug.checked = config.debugView
     this.val.spacing.textContent = config.spacing.toFixed(2)
     this.val.radius.textContent = config.radius.toFixed(2)
     this.val.far.textContent = String(Math.round(config.far))

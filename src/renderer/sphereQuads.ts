@@ -3,7 +3,6 @@ import type { vec3 } from 'gl-matrix'
 import {
   blockOffset,
   latticeColor,
-  quadRadius,
   sphereRadius,
   spriteClampDistance,
 } from './lattice'
@@ -52,8 +51,8 @@ export class SphereQuads {
     const n = config.latticeSize / k
     const maxInstances = this.data.length / STRIDE_FLOATS
     const nearDist = spriteClampDistance(k, projScale, maxPoint)
-    const rk = quadRadius(k)
-    const D = (nearDist + sphereRadius(k)) / spacing
+    const rk = sphereRadius(k)
+    const D = (nearDist + rk) / spacing
     const D2 = D * D
     const off = blockOffset(k)
     const half = config.latticeHalf
@@ -102,6 +101,8 @@ export class SphereQuads {
     const u = this.u
     gl.uniformMatrix4fv(u.loc('uView'), false, f.view)
     gl.uniformMatrix4fv(u.loc('uProj'), false, f.proj)
+    gl.uniform1f(u.loc('uTanHalf'), f.tanHalf)
+    gl.uniform1f(u.loc('uAspect'), f.aspect)
     setShadingUniforms(gl, u, f)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buf)
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data, 0, count * STRIDE_FLOATS)

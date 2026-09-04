@@ -77,6 +77,7 @@ export function setShadingUniforms(
   gl.uniform2f(u.loc('uFogRange'), f.fogRange[0], f.fogRange[1])
   gl.uniform1f(u.loc('uFogOn'), config.fog ? 1 : 0)
   gl.uniform1f(u.loc('uShadeOn'), config.shading ? 1 : 0)
+  gl.uniform1f(u.loc('uDebugView'), config.debugView ? 1 : 0)
 }
 
 export interface FrameState {
@@ -87,6 +88,7 @@ export interface FrameState {
   n: number
   k: number
   spacing: number
-  radius: number
+  aspect: number
+  tanHalf: number
   fogRange: [number, number]
 }

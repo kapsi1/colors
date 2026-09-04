@@ -34,6 +34,8 @@ export class SpherePoints {
     gl.uniform1f(u.loc('uMaxPoint'), f.maxPoint)
     gl.uniform1f(u.loc('uShift'), Math.log2(n))
     gl.uniform1f(u.loc('uMask'), n - 1)
+    gl.uniform1f(u.loc('uTanHalf'), f.tanHalf)
+    gl.uniform1f(u.loc('uAspect'), f.aspect)
     setShadingUniforms(gl, u, f)
     gl.drawArrays(gl.POINTS, 0, n * n * n)
   }

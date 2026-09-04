@@ -12,10 +12,6 @@ export function sphereRadius(k: number): number {
   return config.radius * k
 }
 
-export function quadRadius(k: number): number {
-  return sphereRadius(k) * 1.02
-}
-
 export function spriteClampDistance(k: number, projScale: number, maxPoint: number): number {
   const rk = sphereRadius(k)
   return 1.3 * ((2 * rk * projScale) / maxPoint) + rk

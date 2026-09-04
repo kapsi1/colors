@@ -2,6 +2,9 @@ uniform vec3 uBgColor;
 uniform vec2 uFogRange;
 uniform float uFogOn;
 uniform float uShadeOn;
+uniform float uDebugView;
+uniform float uTanHalf;
+uniform float uAspect;
 
 bool sphereHit(vec3 ro, vec3 rd, vec3 center, float r, out vec3 normal, out float tHit) {
   vec3 oc = ro - center;
@@ -10,6 +13,7 @@ bool sphereHit(vec3 ro, vec3 rd, vec3 center, float r, out vec3 normal, out floa
   float h = b * b - c;
   if (h < 0.0) return false;
   tHit = -b - sqrt(h);
+  if (tHit <= 0.0) return false;
   normal = (ro + tHit * rd - center) / r;
   return true;
 }
@@ -23,10 +27,22 @@ vec3 shadeSphere(vec3 base, vec3 n, float viewZ) {
   return mix(col, uBgColor, uFogOn * f);
 }
 
-vec4 renderSphere(vec3 color, vec3 centerView, float viewZ, float radius, vec2 offset) {
-  vec3 rd = normalize(centerView + vec3(offset * radius, 0.0));
+vec4 renderSphere(
+  vec3 color,
+  vec3 centerView,
+  float hitRadius,
+  vec2 ndcCenter,
+  vec2 ndcExtent,
+  vec2 offset
+) {
+  vec2 ndc = ndcCenter + offset * ndcExtent;
+  vec3 rd = normalize(vec3(ndc.x * uAspect * uTanHalf, ndc.y * uTanHalf, -1.0));
   vec3 n;
   float t;
-  if (!sphereHit(vec3(0.0), rd, centerView, radius, n, t)) discard;
+  if (!sphereHit(vec3(0.0), rd, centerView, hitRadius, n, t)) discard;
+  float viewZ = max(-centerView.z, 1e-6);
+  if (uDebugView > 0.5) {
+    return vec4(1.0 - clamp(viewZ / 8.0, 0.0, 1.0), abs(n.x), abs(n.y), 1.0);
+  }
   return vec4(shadeSphere(color, n, viewZ), 1.0);
 }

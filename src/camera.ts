@@ -6,8 +6,8 @@ const UP: vec3 = vec3.fromValues(0, 1, 0)
 
 export class Camera {
   pos: vec3
-  yaw: number
-  pitch: number
+  yaw = 0
+  pitch = 0
   vel: vec3 = vec3.create()
   fwd: vec3 = vec3.create()
   right: vec3 = vec3.create()
@@ -17,28 +17,39 @@ export class Camera {
 
   constructor() {
     const s = config.startOffset
-    this.pos = vec3.fromValues(s[0] * config.latticeSize, s[1] * config.latticeSize, s[2] * config.latticeSize)
-    const dir = vec3.sub(vec3.create(), vec3.fromValues(0, 0, 0), this.pos)
-    vec3.normalize(dir, dir)
-    this.yaw = Math.atan2(dir[0], -dir[2])
-    this.pitch = Math.asin(Math.max(-1, Math.min(1, dir[1])))
-    this.applyHashOverride()
+    this.pos = vec3.fromValues(
+      s[0] * config.latticeSize,
+      s[1] * config.latticeSize,
+      s[2] * config.latticeSize,
+    )
+    this.faceTowards(0, 0, 0)
     this.updateBasis()
     this.updateView()
   }
 
-  private applyHashOverride(): void {
-    const m = /cam=([-\d.]+),([-\d.]+),([-\d.]+)/.exec(window.location.hash)
-    if (!m) return
-    const v = [Number(m[1]), Number(m[2]), Number(m[3])]
-    if (v.some((n) => !Number.isFinite(n))) return
-    vec3.set(this.pos, v[0], v[1], v[2])
-    const dir = vec3.sub(vec3.create(), vec3.fromValues(0, 0, 0), this.pos)
-    const len = vec3.length(dir)
-    if (len < 1e-6) return
-    vec3.normalize(dir, dir)
-    this.yaw = Math.atan2(dir[0], -dir[2])
-    this.pitch = Math.asin(Math.max(-1, Math.min(1, dir[1])))
+  setPose(x: number, y: number, z: number): void {
+    vec3.set(this.pos, x, y, z)
+    this.updateView()
+  }
+
+  faceTowards(x: number, y: number, z: number): void {
+    const dx = x - this.pos[0]
+    const dy = y - this.pos[1]
+    const dz = z - this.pos[2]
+    const len = Math.hypot(dx, dy, dz)
+    if (len < 1e-9) return
+    this.yaw = Math.atan2(dx / len, -dz / len)
+    this.pitch = Math.asin(Math.max(-1, Math.min(1, dy / len)))
+    this.updateBasis()
+    this.updateView()
+  }
+
+  setOrientation(yawRad: number, pitchRad: number): void {
+    this.yaw = yawRad
+    const maxPitch = (config.maxPitchDeg * Math.PI) / 180
+    this.pitch = Math.max(-maxPitch, Math.min(maxPitch, pitchRad))
+    this.updateBasis()
+    this.updateView()
   }
 
   addLook(dxRad: number, dyRad: number): void {
@@ -67,6 +78,9 @@ export class Camera {
     this.vel[0] += (tx - this.vel[0]) * a
     this.vel[1] += (ty - this.vel[1]) * a
     this.vel[2] += (tz - this.vel[2]) * a
+    for (let i = 0; i < 3; i++) {
+      if (Math.abs(this.vel[i]) < 0.005) this.vel[i] = 0
+    }
     this.pos[0] += this.vel[0] * dt
     this.pos[1] += this.vel[1] * dt
     this.pos[2] += this.vel[2] * dt

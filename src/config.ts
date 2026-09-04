@@ -19,11 +19,13 @@ export interface Config {
   maxPitchDeg: number
   dprCap: number
   renderScale: number
+  userRenderScale: number
   maxInstances: number
   maxPointSizeCap: number
   fog: boolean
   shading: boolean
   axes: boolean
+  debugView: boolean
   lodValues: number[]
   emaAlpha: number
   lodEvalMs: number
@@ -53,15 +55,17 @@ export const config: Config = {
   maxPitchDeg: 89.9,
   dprCap: 2,
   renderScale: 1.0,
+  userRenderScale: 1.0,
   maxInstances: 8192,
   maxPointSizeCap: 1024,
   fog: true,
   shading: true,
   axes: true,
+  debugView: false,
   lodValues: [1, 2, 4, 8, 16],
   emaAlpha: 0.1,
   lodEvalMs: 250,
-  lodUpMs: 20,
-  lodDownMs: 8,
+  lodUpMs: 33,
+  lodDownMs: 12,
   startOffset: [-0.9, 0.35, -0.9],
 }

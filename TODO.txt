@@ -1,0 +1,1 @@
+- a small semi-transparent color cube in in the corner that shows camera's current position as a dot, acting as a minimap
