@@ -49,6 +49,7 @@ export class Hud {
     emaMs: number,
     speed: number,
     rgb: [number, number, number] | null,
+    valueText: string | null = null,
   ): void {
     this.speedo.update(nowMs, speed)
     if (nowMs - this.lastUpdate < 250) return
@@ -59,7 +60,9 @@ export class Hud {
       this.lastFpsText = fpsText
       this.fpsLine.textContent = fpsText
     }
-    const camText = rgb ? `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})` : config.colorModel === 'rgb' ? 'outside cube' : 'outside cylinder'
+    const camText = rgb
+      ? valueText ?? `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
+      : config.colorModel === 'rgb' ? 'outside cube' : 'outside cylinder'
     if (camText !== this.lastCamText) {
       this.lastCamText = camText
       this.camRgb.textContent = camText

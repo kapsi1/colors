@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { load } from './loadTs.mjs'
 
 const { config } = await load('../src/config.ts')
-const { modelColor, insideModel, cameraColor } = await load('../src/colorModel.ts')
+const { modelColor, insideModel, cameraColor, cameraValueText } = await load('../src/colorModel.ts')
 const { buildOutlineEdges } = await load('../src/renderer/outlineGeometry.ts')
 const { Camera } = await load('../src/camera.ts')
 const close = (actual, expected) => actual.forEach((v, i) => assert.ok(Math.abs(v - expected[i]) < 1e-6, `${actual} != ${expected}`))
@@ -42,6 +42,26 @@ test('cylinder membership, HUD colors and LOD distance follow the active model a
     }
     config.colorModel = 'rgb'
     assert.deepEqual(cameraColor([half, 0, half]), [255, 128, 255])
+  } finally { Object.assign(config, saved) }
+})
+
+test('cameraValueText reports HSL/HSV values and nothing for RGB or outside', () => {
+  const saved = { ...config }
+  try {
+    const half = config.latticeHalf * config.spacing
+    config.colorModel = 'hsl'
+    assert.equal(cameraValueText([0, 0, 0]), 'hsl(0, 0%, 50%)')
+    assert.equal(cameraValueText([half, 0, 0]), 'hsl(0, 100%, 50%)')
+    assert.equal(cameraValueText([0, half, 0]), 'hsl(0, 0%, 100%)')
+    const r = half * 0.999
+    const a = 0.003
+    assert.equal(cameraValueText([r * Math.cos(a), 0, -r * Math.sin(a)]), 'hsl(0, 100%, 50%)', 'hue wraps below 360')
+    config.colorModel = 'hsv'
+    assert.equal(cameraValueText([0, 0, half]), 'hsv(90, 100%, 50%)')
+    assert.equal(cameraValueText([0, -half, 0]), 'hsv(0, 0%, 0%)')
+    assert.equal(cameraValueText([half, 0, half]), null, 'outside cylinder')
+    config.colorModel = 'rgb'
+    assert.equal(cameraValueText([0, 0, 0]), null)
   } finally { Object.assign(config, saved) }
 })
 

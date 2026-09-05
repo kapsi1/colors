@@ -1,5 +1,5 @@
 import { config, type Config } from './config'
-import { cameraColor, colorModelIndex } from './colorModel'
+import { cameraColor, cameraValueText, colorModelIndex } from './colorModel'
 import { Camera } from './camera'
 import { initInput } from './input'
 import { LodController } from './lod'
@@ -359,7 +359,7 @@ function main(): void {
     window.__cube!.renders = renders
     window.__cube!.submitted = renderer.points.submitted
     previousRendered = dirty
-    hud.update(now, lod.emaMs, config.baseSpeed, cameraColor(cam.pos))
+    hud.update(now, lod.emaMs, config.baseSpeed, cameraColor(cam.pos), cameraValueText(cam.pos))
     if (hud.visible) minimap.update(cam, canvas.width / canvas.height)
     settings.sync()
 

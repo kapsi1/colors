@@ -40,6 +40,7 @@ resetEls()
 global.document = { getElementById: (id) => els[id] ?? null }
 
 const { Hud } = await load('../src/hud.ts')
+const { config } = await load('../src/config.ts')
 
 function newHud() {
   resetEls()
@@ -59,7 +60,7 @@ test('index.html shows swatch left of a two-line rgb/hex block inside #info', ()
   assert.ok(rgb < hex, 'rgb before hex (hex on the second line)')
   assert.match(html, /#cam-swatch\s*{[^}]*width:\s*3\.2em/, 'swatch spans the two lines (2 × 1.6em)')
   assert.match(html, /#cam-swatch\s*{[^}]*height:\s*3\.2em/, 'swatch height matches both lines')
-  assert.match(html, /#cam-text\s*{[^}]*min-width:\s*18ch/, 'widest rgb value is reserved')
+  assert.match(html, /#cam-text\s*{[^}]*min-width:\s*20ch/, 'widest hsv value is reserved')
 })
 
 test('hud.ts targets the renamed info ids', () => {
@@ -113,6 +114,28 @@ test('Hud update outside cube clears hex and shows transparent swatch', () => {
   assert.equal(e['cam-rgb'].textContent, 'outside cube')
   assert.equal(e['cam-hex'].textContent, '')
   assert.equal(e['cam-swatch'].style.background, 'transparent')
+})
+
+test('Hud update shows the model value in place of rgb and keeps hex from rgb', () => {
+  const { hud, els: e } = newHud()
+  hud.update(0, 16, 10, [128, 128, 128], 'hsl(0, 0%, 50%)')
+  assert.equal(e['cam-rgb'].textContent, 'hsl(0, 0%, 50%)')
+  assert.equal(e['cam-hex'].textContent, '#808080')
+  assert.equal(e['cam-swatch'].style.background, 'rgb(128,128,128)')
+
+  hud.update(300, 16, 10, [255, 0, 0], 'hsv(0, 100%, 100%)')
+  assert.equal(e['cam-rgb'].textContent, 'hsv(0, 100%, 100%)')
+  assert.equal(e['cam-hex'].textContent, '#ff0000')
+
+  hud.update(600, 16, 10, [16, 32, 48], null)
+  assert.equal(e['cam-rgb'].textContent, 'rgb(16, 32, 48)', 'null value falls back to rgb')
+
+  config.colorModel = 'hsl'
+  try {
+    hud.update(900, 16, 10, null, null)
+    assert.equal(e['cam-rgb'].textContent, 'outside cylinder')
+    assert.equal(e['cam-hex'].textContent, '')
+  } finally { config.colorModel = 'rgb' }
 })
 
 test('Hud throttles DOM writes to 4 Hz', () => {

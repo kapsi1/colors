@@ -12,6 +12,14 @@ Spheres are ray-traced per pixel in custom GLSL shaders, distant geometry is
 drawn as GPU-instanced point sprites, and an adaptive LOD controller keeps the
 frame rate on target automatically.
 
+## Screenshots
+
+Click any image for the full-resolution view.
+
+[<img src="screenshots/thumbs/1.jpg" width="32%" alt="RGB cube seen from a corner, with HUD and minimap">](screenshots/1.jpg)
+[<img src="screenshots/thumbs/2.jpg" width="32%" alt="HSV cylinder seen from above the rim">](screenshots/2.jpg)
+[<img src="screenshots/thumbs/3.jpg" width="32%" alt="Inside the HSV cylinder lattice, purple spheres up close">](screenshots/3.jpg)
+
 ## Color models
 
 Use the **RGB / HSL / HSV** radio buttons beside the speedometer in the top-left
@@ -23,7 +31,8 @@ black bottom; HSV has a colored top and black bottom.
 The cylinder samples colors on a uniformly spaced Cartesian lattice clipped to
 a circular cross-section; it does not contain one sphere per unique RGB color.
 The outline and minimap follow the selected shape, and the HUD reports the
-RGB/hex equivalent at the camera position (or ?outside cylinder?).
+model's own values at the camera position (`hsl(...)`/`hsv(...)` instead of
+`rgb(...)` for the cylinders; hex always stays RGB) or ?outside cylinder?.
 Links preserve the selection with `model=hsl` or `model=hsv` in the URL hash.
 Switching models keeps your camera pose, spacing, and quality settings.
 
@@ -40,8 +49,9 @@ Switching models keeps your camera pose, spacing, and quality settings.
   queries; first lowers resolution in small steps, then alternates resolution
   and sphere stride (k = 1…16) with hysteresis to avoid oscillation. Manual
   override via keys or settings.
-- **Live HUD** — FPS readout, camera RGB and hex values stacked on two lines
-  with a square color swatch spanning both to their left, car-style
+- **Live HUD** — FPS readout, camera color values (RGB, or the active model's
+  own HSL/HSV values) and hex stacked on two lines with a square color swatch
+  spanning both to their left, car-style
   speedometer dial, and an isometric minimap showing camera position, viewing
   frustum, and nearest face projections.
 - **Outer boundary** — the camera is kept within 3.2 cube half-extents and 60% of
@@ -272,7 +282,7 @@ explicit hooks.
 │   ├── lod.ts                  # Automatic LOD controller: EMA frame timing,
 │   │                           #   GPU/CPU work budget, scale steps, distance
 │   │                           #   stride with hysteresis, manual override
-│   ├── hud.ts                  # FPS line, camera RGB/hex lines with spanning swatch, hint box toggle
+│   ├── hud.ts                  # FPS line, camera model value/hex lines with spanning swatch, hint box toggle
 │   ├── minimap.ts              # 2D-canvas isometric cube minimap: shaded faces,
 │   │                           #   camera dot, frustum cone, axis projections
 │   ├── speedometer.ts          # Canvas car-style speed dial with damped needle
@@ -302,7 +312,7 @@ explicit hooks.
 └── tests/
     ├── loadTs.mjs              # node-side TS loader shared by tests
     ├── camera.test.mjs         # node:test: camera look/movement/boundary regressions
-    ├── hud.test.mjs            # node:test: swatch left, rgb + lowercase hex, outside-cube, throttling
+    ├── hud.test.mjs            # node:test: swatch left, model value + lowercase hex, outside-cube, throttling
     ├── performance.test.mjs    # node:test: LOD, culling, GPU query semantics
     ├── outline.test.mjs        # node:test: outline edges, near-plane clipping
     ├── outline.spec.mjs        # Playwright: outline ribbon width and color
