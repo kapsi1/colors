@@ -2,3 +2,4 @@
 - Add JS tests for new features
 - Update README.md, and PERFORMANCE.md with new features and performance improvements
 - use pnpm for package management
+- reuse the dev server if it's running, instead of starting a new one

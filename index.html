@@ -39,7 +39,7 @@
       z-index: 5;
     }
 
-    #fps {
+    #info {
       position: fixed;
       top: 10px;
       left: 10px;
@@ -58,13 +58,27 @@
       margin-top: 4px;
     }
 
+    #info-cam {
+      display: flex;
+      gap: 6px;
+    }
+
+    #cam-text {
+      min-width: 18ch;
+      white-space: nowrap;
+    }
+
+    #cam-hex {
+      min-height: 1.6em;
+    }
+
     #cam-swatch {
-      display: inline-block;
-      width: 11px;
-      height: 11px;
+      display: block;
+      width: 3.2em;
+      height: 3.2em;
+      box-sizing: border-box;
       border: 1px solid #777;
       border-radius: 2px;
-      vertical-align: -2px;
       background: transparent;
     }
 
@@ -220,9 +234,15 @@
     <div id="minimap-wrap">
       <canvas id="minimap" role="img" aria-label="RGB cube minimap showing camera position and viewing cone"></canvas>
     </div>
-    <div id="fps">
-      <div id="fps-line">-- fps</div>
-      <div id="fps-cam"><span id="cam-rgb">--</span> <span id="cam-swatch"></span></div>
+    <div id="info">
+      <div id="info-fps">-- fps</div>
+      <div id="info-cam">
+        <span id="cam-swatch"></span>
+        <div id="cam-text">
+          <div id="cam-rgb">--</div>
+          <div id="cam-hex"></div>
+        </div>
+      </div>
       <canvas id="speedo" role="img" aria-label="Maximum move speed dial, controlled with the mouse wheel"></canvas>
     </div>
     <div id="hint">

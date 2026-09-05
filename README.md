@@ -25,7 +25,8 @@ frame rate on target automatically.
   queries; first lowers resolution in small steps, then alternates resolution
   and sphere stride (k = 1…16) with hysteresis to avoid oscillation. Manual
   override via keys or settings.
-- **Live HUD** — FPS readout, camera RGB value with swatch, car-style
+- **Live HUD** — FPS readout, camera RGB and hex values stacked on two lines
+  with a square color swatch spanning both to their left, car-style
   speedometer dial, and an isometric minimap showing camera position, viewing
   frustum, and nearest face projections.
 - **Shareable state** — the full camera pose and every setting are serialized
@@ -81,7 +82,8 @@ npm test
 
 Runs the Node.js built-in test runner against `tests/*.test.mjs`, which
 transpiles the relevant TypeScript modules on the fly and covers the LOD
-controller, frustum culling, and GPU timer query handling.
+controller, frustum culling, GPU timer query handling, and the HUD color
+readout (swatch placement, hex formatting, throttling).
 
 For the WebGL pixel regression tests, install Chromium once and run:
 
@@ -246,7 +248,7 @@ explicit hooks.
 │   ├── lod.ts                  # Automatic LOD controller: EMA frame timing,
 │   │                           #   GPU/CPU work budget, scale steps, distance
 │   │                           #   stride with hysteresis, manual override
-│   ├── hud.ts                  # FPS line, camera RGB + swatch, hint box toggle
+│   ├── hud.ts                  # FPS line, camera RGB/hex lines with spanning swatch, hint box toggle
 │   ├── minimap.ts              # 2D-canvas isometric cube minimap: shaded faces,
 │   │                           #   camera dot, frustum cone, axis projections
 │   ├── speedometer.ts          # Canvas car-style speed dial with damped needle
@@ -275,6 +277,7 @@ explicit hooks.
 │           └── outline.frag.glsl    # Solid black outline fill
 └── tests/
     ├── loadTs.mjs              # node-side TS loader shared by tests
+    ├── hud.test.mjs            # node:test: swatch left, rgb + lowercase hex, outside-cube, throttling
     ├── performance.test.mjs    # node:test: LOD, culling, GPU query semantics
     ├── outline.test.mjs        # node:test: outline edges, near-plane clipping
     ├── outline.spec.mjs        # Playwright: outline ribbon width and color

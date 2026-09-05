@@ -6,18 +6,21 @@ export class Hud {
   private help: HTMLButtonElement
   private fpsLine: HTMLElement
   private camRgb: HTMLElement
+  private camHex: HTMLElement
   private swatch: HTMLElement
   private speedo = new Speedometer()
   private lastUpdate = -1e9
   private lastFpsText = ''
   private lastCamText = ''
+  private lastHexText = ''
 
   constructor() {
     this.root = document.getElementById('hud')!
     this.hint = document.getElementById('hint')!
     this.help = document.getElementById('help') as HTMLButtonElement
-    this.fpsLine = document.getElementById('fps-line')!
+    this.fpsLine = document.getElementById('info-fps')!
     this.camRgb = document.getElementById('cam-rgb')!
+    this.camHex = document.getElementById('cam-hex')!
     this.swatch = document.getElementById('cam-swatch')!
     this.help.addEventListener('pointerdown', (e) => e.preventDefault())
     this.help.addEventListener('click', () => this.toggleHints())
@@ -59,6 +62,13 @@ export class Hud {
       this.lastCamText = camText
       this.camRgb.textContent = camText
       this.swatch.style.background = rgb ? `rgb(${rgb[0]},${rgb[1]},${rgb[2]})` : 'transparent'
+    }
+    const hexText = rgb
+      ? `#${rgb[0].toString(16).padStart(2, '0')}${rgb[1].toString(16).padStart(2, '0')}${rgb[2].toString(16).padStart(2, '0')}`
+      : ''
+    if (hexText !== this.lastHexText) {
+      this.lastHexText = hexText
+      this.camHex.textContent = hexText
     }
   }
 }
