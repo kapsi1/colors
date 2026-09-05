@@ -3,3 +3,6 @@ dist
 *.local
 .agents/
 .tmp
+test-results/
+playwright-report/
+debug.log

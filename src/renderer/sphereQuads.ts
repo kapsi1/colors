@@ -112,6 +112,7 @@ export class SphereQuads {
     gl.uniformMatrix4fv(u.loc('uProj'), false, f.proj)
     gl.uniform1f(u.loc('uTanHalf'), f.tanHalf)
     gl.uniform1f(u.loc('uAspect'), f.aspect)
+    gl.uniform2f(u.loc('uViewport'), gl.drawingBufferWidth, gl.drawingBufferHeight)
     setShadingUniforms(gl, u, f)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buf)
     if (this.upload) {

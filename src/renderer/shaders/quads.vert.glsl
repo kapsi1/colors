@@ -13,31 +13,36 @@ uniform float uAspect;
 out vec3 vColor;
 out vec3 vCenterView;
 out float vRadius;
-out vec2 vNdcCenter;
-out vec2 vNdcExtent;
-out vec2 vCorner;
 
 void main() {
   vec2 corner = vec2(
     ((gl_VertexID & 1) == 1) ? 1.0 : -1.0,
     ((gl_VertexID & 2) == 2) ? 1.0 : -1.0
   );
-  vec3 right = vec3(uView[0][0], uView[1][0], uView[2][0]);
-  vec3 up = vec3(uView[0][1], uView[1][1], uView[2][1]);
   vec4 vc = uView * vec4(aCenter, 1.0);
-  float viewZ = max(-vc.z, 1e-6);
-  float t = length(vc.xy) / viewZ;
-  float ta = aRadius / sqrt(max(dot(vc.xyz, vc.xyz) - aRadius * aRadius, 1e-6));
-  float extTan = (t + ta) / max(1.0 - t * ta, 1e-3) - t;
-  float ext = viewZ * extTan * 1.02;
-  vec3 pos = vc.xyz + (right * corner.x + up * corner.y) * ext;
-  vec4 clip = uProj * vec4(pos, 1.0);
-  vec4 centerClip = uProj * vc;
-  gl_Position = clip;
+  float depth = -vc.z;
+  vec2 lo = vec2(-1.0);
+  vec2 hi = vec2(1.0);
+  if (depth > aRadius) {
+    // Tangents to the sphere in the XZ and YZ planes give its exact
+    // screen bounds. All coordinates here are already in view space.
+    float denom = depth * depth - aRadius * aRadius;
+    vec2 tangent = aRadius * sqrt(vc.xy * vc.xy + vec2(denom));
+    vec2 scale = vec2(uTanHalf * uAspect, uTanHalf);
+    lo = clamp((vc.xy * depth - tangent) / denom / scale, -1.0, 1.0);
+    hi = clamp((vc.xy * depth + tangent) / denom / scale, -1.0, 1.0);
+  } else if (depth + aRadius <= 0.0) {
+    // Entirely behind the eye: degenerate the quad.
+    hi = lo;
+  }
+  // A sphere crossing the eye plane can have unbounded projected bounds;
+  // use the viewport and let the ray test reject pixels outside the sphere.
+  vec2 ndc = mix(lo, hi, corner * 0.5 + 0.5);
+  vec4 clip = uProj * vec4(0.0, 0.0, -max(depth, 1e-6), 1.0);
+  // The quad is a rasterization proxy, not the sphere surface. Keep it
+  // from being clipped at the near plane, preserving center-based depth.
+  gl_Position = vec4(ndc, max(clip.z / clip.w, -1.0), 1.0);
   vColor = aColor;
   vCenterView = vc.xyz;
   vRadius = aRadius;
-  vNdcCenter = centerClip.xy / max(centerClip.w, 1e-6);
-  vNdcExtent = vec2(extTan / (uTanHalf * uAspect), extTan / uTanHalf);
-  vCorner = corner;
 }

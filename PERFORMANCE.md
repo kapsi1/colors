@@ -22,6 +22,21 @@ GPU timing support, recovery is deliberately conservative on a 60 Hz display.
 Validation: `npm test` runs controller, culling and GPU-query regression tests;
 `npm run build` checks TypeScript and builds the application.
 
+Near-sphere quads use per-axis tangent bounds clipped to the viewport instead
+of oversized, rotated billboards. This bounds their raster area and removes
+the turning artifacts without adding instances or draw calls. Eye-plane
+crossings fall back to one viewport-sized quad per affected sphere; ray misses
+are discarded. Near-plane proxy clamping preserves center-based depth ordering.
+No new frame-rate measurement is claimed for this correctness fix.
+
+`npm run test:render` runs WebGL pixel/normal regression checks in headless
+Chromium (install it first with `pnpm exec playwright install chromium`). The
+114 cases cover the seven reported poses, full yaw turns, steep pitch, multiple
+FOVs/aspect ratios, near/eye-plane crossings, and spheres behind the camera or
+beyond the far plane. The original shaders fail this regression. A browser
+check of the full lattice at all seven poses also completed without WebGL or
+JavaScript errors.
+
 A local Chromium/SwiftShader test at 1280 × 720, rotating inside the cube, measured
 about 32 → 39 FPS at fixed stride 4 and full resolution. With auto LOD enabled,
 the original ran at about 1.5 FPS (it forced stride 1 inside the cube); the updated

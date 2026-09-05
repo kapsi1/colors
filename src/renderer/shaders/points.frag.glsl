@@ -13,5 +13,5 @@ out vec4 fragColor;
 
 void main() {
   vec2 p = vec2(gl_PointCoord.x * 2.0 - 1.0, 1.0 - gl_PointCoord.y * 2.0);
-  fragColor = renderSphere(vColor, vCenterView, vRadius, vNdcCenter, vNdcExtent, p);
+  fragColor = renderSphere(vColor, vCenterView, vRadius, vNdcCenter + p * vNdcExtent);
 }

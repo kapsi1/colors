@@ -19,7 +19,8 @@ frame rate on target automatically.
 - **Two-tier hybrid rendering** — far spheres as instanced `GL_POINTS` (lattice
   coordinates decoded from vertex IDs in the shader), near spheres as instanced
   camera-facing quads; both ray-trace an analytic sphere per pixel with correct
-  perspective sizing.
+  perspective sizing. Near spheres keep stable silhouettes while turning,
+  including when their quad centers cross the near clipping plane.
 - **Automatic LOD** — tracks frame-time EMA and (when supported) GPU timer
   queries; first lowers resolution in small steps, then alternates resolution
   and sphere stride (k = 1…16) with hysteresis to avoid oscillation. Manual
@@ -81,6 +82,17 @@ npm test
 Runs the Node.js built-in test runner against `tests/*.test.mjs`, which
 transpiles the relevant TypeScript modules on the fly and covers the LOD
 controller, frustum culling, and GPU timer query handling.
+
+For the WebGL pixel regression tests, install Chromium once and run:
+
+```sh
+pnpm exec playwright install chromium
+pnpm test:render
+```
+
+These JavaScript tests compile the actual sphere shaders and compare pixels
+and debug normals with independent ray intersections across the reported
+camera poses, a full turn, varied FOV/aspect ratios, and near/eye-plane crossings.
 
 ### Controls
 
@@ -176,6 +188,12 @@ renderer exploits two facts:
   the NDC ray — producing per-pixel normals, wrap lighting, and depth-cue fog
   with no tessellation anywhere.
 
+Near quads use projected sphere tangent bounds clamped to the viewport, with
+rays reconstructed from actual fragment coordinates. Their proxy geometry is
+kept at the near plane when its center passes it, so rotating cannot clip or
+fold the billboard. Spheres crossing the eye plane use viewport-sized bounds;
+the ray test rejects pixels that miss. Depth ordering remains center-based.
+
 Chunk culling (`visibleChunks.ts`) rejects whole 16³ blocks against the view
 frustum with bounds that include edge spheres, so rotating the camera can never
 expose holes.
@@ -248,15 +266,15 @@ explicit hooks.
 │       └── shaders/
 │           ├── points.vert.glsl    # gl_VertexID → lattice cell, sprite sizing
 │           ├── points.frag.glsl    # Point-sprite entry to shared sphere shading
-│           ├── quads.vert.glsl     # Billboards oriented from the view matrix
+│           ├── quads.vert.glsl     # Viewport-clamped sphere tangent bounds
 │           ├── quads.frag.glsl     # Quad entry to shared sphere shading
 │           ├── common.frag.glsl    # Analytic sphere ray hit, wrap lighting,
 │           │                       #   fog, debug view (shared by both passes)
 │           ├── axes.vert.glsl      # Axis line transform
 │           └── axes.frag.glsl      # Dashed-line discard for axes
 └── tests/
-    └── performance.test.mjs    # node:test regression suite: LOD adaptation,
-                                #   culling correctness, GPU query semantics
+    ├── performance.test.mjs    # node:test: LOD, culling, GPU query semantics
+    └── sphereQuads.spec.mjs    # Playwright: shader pixels vs. analytic rays
 ```
 
 ## License

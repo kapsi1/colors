@@ -31,11 +31,8 @@ vec4 renderSphere(
   vec3 color,
   vec3 centerView,
   float hitRadius,
-  vec2 ndcCenter,
-  vec2 ndcExtent,
-  vec2 offset
+  vec2 ndc
 ) {
-  vec2 ndc = ndcCenter + offset * ndcExtent;
   vec3 rd = normalize(vec3(ndc.x * uAspect * uTanHalf, ndc.y * uTanHalf, -1.0));
   vec3 n;
   float t;
