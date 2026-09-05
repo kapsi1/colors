@@ -31,8 +31,8 @@ frame rate on target automatically.
 - **Shareable state** — the full camera pose and every setting are serialized
   into the URL hash and restored on load; copy a link to share an exact view.
 - **Settings panel** — spacing, radius, view distance, speed, sensitivity, FOV,
-  LOD, target FPS, render scale, background color, fog, shading, axes, and a
-  debug view.
+  LOD, target FPS, render scale, background color, fog, shading, cube outline,
+  and a debug view.
 - **Robustness** — WebGL context loss/restore handling, background-tab idle
   handling, DPR capping, and a graceful fallback when WebGL2 is unavailable.
 
@@ -134,7 +134,7 @@ settings panel — the panel updates the hash, and a hash updates the panel.
 | `fps` | `fps=120` | Automatic-LOD target FPS (60–144) |
 | `minscale` | `minscale=0.33` | Minimum automatic resolution scale |
 | `bg` | `bg=%23002244` | Background color, `#rrggbb` |
-| `fog`, `shade`, `axes` | `fog=0` | Toggle depth-cue fog, shading, axes/outline (`1`/`0`) |
+| `fog`, `shade`, `axes` | `fog=0` | Toggle depth-cue fog, shading, cube outline (`1`/`0`) |
 | `debug` | `debug=1` | Debug view: R = distance, G/B = |normal.x|/|normal.y| |
 | `k` | `k=4` | Fixed LOD stride (power of two, 1–16) |
 | `auto` | `auto=1` | Force automatic LOD on |
@@ -164,7 +164,7 @@ Each animation frame:
    frame; the GPU pass runs only when something changed.
 5. **Draw** — clear, then three passes: `SpherePoints` (far field),
    `SphereQuads` (near field, rebuilt only when the camera/stride changes),
-   `Axes` (outline + dashed R/G/B axes).
+   `Outline` (thick black cube outline).
 6. **HUD & persistence** — FPS/RGB/speedometer/minimap update (DOM writes only
    on change, throttled to 4 Hz); the URL hash is rewritten once movement has
    settled (≥ 500 ms cadence, ≥ 300 ms after the last scene change).
@@ -261,7 +261,8 @@ explicit hooks.
 │       ├── visibleChunks.ts    # CPU frustum culling of 16³ lattice blocks
 │       ├── spherePoints.ts     # Instanced GL_POINTS far-field pass
 │       ├── sphereQuads.ts      # Instanced camera-facing quad near-field pass
-│       ├── axes.ts             # Cube outline, dashed R/G/B axes, arrow cones
+│       ├── outline.ts           # Thick black cube outline (screen-space ribbon)
+│       ├── outlineGeometry.ts   # Outline edges, near-plane clip, quad expansion
 │       ├── gpuTimer.ts         # EXT_disjoint_timer_query_webgl2 wrapper
 │       └── shaders/
 │           ├── points.vert.glsl    # gl_VertexID → lattice cell, sprite sizing
@@ -270,10 +271,13 @@ explicit hooks.
 │           ├── quads.frag.glsl     # Quad entry to shared sphere shading
 │           ├── common.frag.glsl    # Analytic sphere ray hit, wrap lighting,
 │           │                       #   fog, debug view (shared by both passes)
-│           ├── axes.vert.glsl      # Axis line transform
-│           └── axes.frag.glsl      # Dashed-line discard for axes
+│           ├── outline.vert.glsl    # Screen-space outline ribbon expansion
+│           └── outline.frag.glsl    # Solid black outline fill
 └── tests/
+    ├── loadTs.mjs              # node-side TS loader shared by tests
     ├── performance.test.mjs    # node:test: LOD, culling, GPU query semantics
+    ├── outline.test.mjs        # node:test: outline edges, near-plane clipping
+    ├── outline.spec.mjs        # Playwright: outline ribbon width and color
     └── sphereQuads.spec.mjs    # Playwright: shader pixels vs. analytic rays
 ```
 

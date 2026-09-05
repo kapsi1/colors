@@ -101,7 +101,7 @@ export class SettingsPanel {
       <div class="row"><span>Background</span><input type="color" id="set-bg"><span class="val" id="v-bg"></span></div>
       <div class="row"><span>Depth-cue fog</span><input type="checkbox" id="set-fog"></div>
       <div class="row"><span>Subtle shading</span><input type="checkbox" id="set-shade"></div>
-      <div class="row"><span>Axes &amp; outline</span><input type="checkbox" id="set-axes"></div>
+      <div class="row"><span>Outline</span><input type="checkbox" id="set-axes"></div>
       <h3>Debug</h3>
       <div class="row"><span>Dist/normal</span><input type="checkbox" id="set-debug"></div>
       <div style="margin:4px 0 2px;color:#666;font-size:11px;line-height:1.4;">

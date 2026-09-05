@@ -1,27 +1,8 @@
-import { readFileSync } from 'node:fs'
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
-import ts from 'typescript'
 import { mat4 } from 'gl-matrix'
+import { load } from './loadTs.mjs'
 
-// Load the small TS module graph with the existing compiler, without another
-// test dependency or generated files. Identical URLs share config instances.
-const modules = new Map()
-function sourceUrl(path) {
-  if (modules.has(path.href)) return modules.get(path.href)
-  const { outputText } = ts.transpileModule(readFileSync(path, 'utf8'), {
-    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
-  })
-  const code = outputText.replace(/from (['"])([^'"]+)\1/g, (_, quote, specifier) => {
-    const url = specifier.startsWith('.')
-      ? sourceUrl(new URL(`${specifier}.ts`, path)) : import.meta.resolve(specifier)
-    return `from ${quote}${url}${quote}`
-  })
-  const url = `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`
-  modules.set(path.href, url)
-  return url
-}
-const load = path => import(sourceUrl(new URL(path, import.meta.url)))
 const { config } = await load('../src/config.ts')
 const { LodController } = await load('../src/lod.ts')
 const { visibleChunks, CHUNK_SIZE } = await load('../src/renderer/visibleChunks.ts')

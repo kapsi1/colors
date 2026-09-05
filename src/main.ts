@@ -8,20 +8,20 @@ import { SettingsPanel, rgbToHex, hexToRgb } from './settings'
 import { createGL, queryMaxPointSize, type FrameState } from './renderer/gl'
 import { SpherePoints } from './renderer/spherePoints'
 import { SphereQuads } from './renderer/sphereQuads'
-import { Axes } from './renderer/axes'
+import { Outline } from './renderer/outline'
 import { GpuTimer } from './renderer/gpuTimer'
 
 interface Renderer {
   points: SpherePoints
   quads: SphereQuads
-  axes: Axes
+  outline: Outline
 }
 
 function createRenderer(gl: WebGL2RenderingContext): Renderer {
   return {
     points: new SpherePoints(gl),
     quads: new SphereQuads(gl),
-    axes: new Axes(gl),
+    outline: new Outline(gl),
   }
 }
 
@@ -345,7 +345,7 @@ function main(): void {
       renderer.points.render(state)
       const quadCount = renderer.quads.build(cam.pos, k, projScaleValue, maxPoint)
       renderer.quads.render(state, quadCount)
-      renderer.axes.render(state)
+      renderer.outline.render(state)
       gpuTimer.end()
     }
 
