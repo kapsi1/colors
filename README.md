@@ -8,9 +8,10 @@ An interactive WebGL2 flythrough of the complete RGB color space, rendered as a
 
 Click any image for the full-resolution view.
 
-[<img src="screenshots/thumbs/1.jpg" width="32%" alt="RGB cube seen from a corner, with HUD and minimap">](screenshots/1.jpg)
-[<img src="screenshots/thumbs/2.jpg" width="32%" alt="HSV cylinder seen from above the rim">](screenshots/2.jpg)
-[<img src="screenshots/thumbs/3.jpg" width="32%" alt="Inside the HSV cylinder lattice, purple spheres up close">](screenshots/3.jpg)
+[<img src="screenshots/thumbs/1.jpg" width="25%" alt="RGB cube seen from a corner, with HUD and minimap">](screenshots/1.jpg)
+[<img src="screenshots/thumbs/2.jpg" width="25%" alt="HSV cylinder in a purple area">](screenshots/2.jpg)
+[<img src="screenshots/thumbs/3.jpg" width="25%" alt="Inside the HSL cylinder lattice, blue spheres up close">](screenshots/3.jpg)
+[<img src="screenshots/thumbs/4.jpg" width="25%" alt="Inside the HSL cylinder lattice, dark spheres">](screenshots/4.jpg)
 
 ## Color models
 
@@ -20,8 +21,10 @@ vertical axis (red at +X, yellow toward +Z), saturation increases from the gray
 axis to the rim, and lightness/value increases upward. HSL has a white top and
 black bottom; HSV has a colored top and black bottom.
 
-The cylinder samples colors on a uniformly spaced Cartesian lattice clipped to
-a circular cross-section; it does not contain one sphere per unique RGB color.
+The cylinder repositions the same RGB-indexed 256 × 256 × 256 sphere set with
+the standard RGB-to-HSL/HSV transform, so every 24-bit RGB color remains present
+exactly once. Spacing is therefore nonuniform in the cylinders: grays lie on the
+axis and nearby colors crowd around it.
 The outline and minimap follow the selected shape, and the HUD reports the
 model's own values at the camera position (`hsl(...)`/`hsv(...)` instead of
 `rgb(...)` for the cylinders; hex always stays RGB) or ?outside cylinder?.

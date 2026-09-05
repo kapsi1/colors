@@ -5,6 +5,7 @@ import { createProgram, setShadingUniforms, Uniforms, type FrameState } from './
 import vertSrc from './shaders/points.vert.glsl?raw'
 import fragSrc from './shaders/points.frag.glsl?raw'
 import commonSrc from './shaders/common.frag.glsl?raw'
+import colorModelSrc from './shaders/colorModel.glsl?raw'
 import { CHUNK_SIZE, visibleChunks } from './visibleChunks'
 
 export class SpherePoints {
@@ -16,7 +17,8 @@ export class SpherePoints {
   submitted = 0
 
   constructor(private gl: WebGL2RenderingContext) {
-    this.prog = createProgram(gl, vertSrc, fragSrc.replace('%%COMMON%%', commonSrc))
+    this.prog = createProgram(gl, vertSrc.replace('%%COLOR_MODEL%%', colorModelSrc),
+      fragSrc.replace('%%COMMON%%', commonSrc))
     this.u = new Uniforms(gl, this.prog)
     this.vao = gl.createVertexArray()!
     this.chunks = gl.createBuffer()!

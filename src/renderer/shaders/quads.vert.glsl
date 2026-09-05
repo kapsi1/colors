@@ -7,6 +7,9 @@ in float aRadius;
 
 uniform mat4 uView;
 uniform mat4 uProj;
+uniform int uColorModel;
+uniform float uLatticeHalf;
+uniform float uSpacing;
 uniform float uTanHalf;
 uniform float uAspect;
 
@@ -14,12 +17,17 @@ out vec3 vColor;
 out vec3 vCenterView;
 out float vRadius;
 
+%%COLOR_MODEL%%
+
 void main() {
   vec2 corner = vec2(
     ((gl_VertexID & 1) == 1) ? 1.0 : -1.0,
     ((gl_VertexID & 2) == 2) ? 1.0 : -1.0
   );
-  vec4 vc = uView * vec4(aCenter, 1.0);
+  vec3 center = uColorModel == 0
+    ? aCenter
+    : rgbModelPosition(aColor, uColorModel) * uLatticeHalf * uSpacing;
+  vec4 vc = uView * vec4(center, 1.0);
   float depth = -vc.z;
   vec2 lo = vec2(-1.0);
   vec2 hi = vec2(1.0);

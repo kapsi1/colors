@@ -21,6 +21,40 @@ export function modelParams(x: number, y: number, z: number): [number, number, n
   return [h, s, t]
 }
 
+// Maps one RGB color to its canonical point in the selected model. Achromatic
+// colors use hue zero; saturation zero keeps them on the cylinder axis.
+export function rgbModelPosition(
+  r: number,
+  g: number,
+  b: number,
+  model: ColorModel,
+  out: [number, number, number] = [0, 0, 0],
+): [number, number, number] {
+  if (model === 'rgb') {
+    out[0] = r * 2 - 1
+    out[1] = g * 2 - 1
+    out[2] = b * 2 - 1
+    return out
+  }
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const delta = max - min
+  let h6 = 0
+  if (delta > 0) {
+    if (max === r) h6 = ((g - b) / delta + 6) % 6
+    else if (max === g) h6 = (b - r) / delta + 2
+    else h6 = (r - g) / delta + 4
+  }
+  const t = model === 'hsl' ? (max + min) / 2 : max
+  const denom = model === 'hsl' ? 1 - Math.abs(2 * t - 1) : max
+  const s = delta === 0 || denom === 0 ? 0 : delta / denom
+  const angle = h6 * Math.PI / 3
+  out[0] = s * Math.cos(angle)
+  out[1] = t * 2 - 1
+  out[2] = s * Math.sin(angle)
+  return out
+}
+
 export function insideModel(x: number, y: number, z: number): boolean {
   return Math.abs(y) <= 1 && (config.colorModel === 'rgb'
     ? Math.abs(x) <= 1 && Math.abs(z) <= 1 : x * x + z * z <= 1)

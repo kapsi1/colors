@@ -28,16 +28,20 @@ Each animation frame:
 
 ### Rendering model
 
-A sphere lattice of 16.7 million objects cannot be drawn as polygons. The
-renderer exploits two facts:
+A set of 16.7 million spheres cannot be drawn as polygons. RGB indices are the
+canonical sphere identities in every model: their color is always the original
+8-bit RGB value, while HSL/HSV modes transform that value into a cylinder
+position. The renderer exploits two facts:
 
 - **Far field** — when a sphere projects to at most a few pixels, a point
   sprite is enough. One instanced draw call covers the whole lattice: each
   instance is a 16³ block (one `aChunkOffset` vertex-buffer entry), and the
-  vertex shader decodes `gl_VertexID` into (x, y, z) lattice coordinates,
-  derives the sphere center, computes the color directly from those
-  coordinates, and sizes the sprite from the exact perspective projection of a
-  sphere (with a `gl_PointSize` hardware clamp).
+  vertex shader decodes `gl_VertexID` into (R, G, B) indices. RGB mode uses
+  those indices as cube coordinates; HSL/HSV mode converts them to hue,
+  saturation, and lightness/value, then maps those parameters to a cylinder
+  position. The original RGB indices remain the sphere color. The shader sizes
+  the sprite from the exact perspective projection of a sphere (with a
+  `gl_PointSize` hardware clamp).
 - **Near field** — within the distance where point sprites would exceed the
   GPU's maximum point size, `SphereQuads` uploads instanced camera-facing
   quads (center + color + radius per instance, capped at `maxInstances`). Both
@@ -53,7 +57,19 @@ the ray test rejects pixels that miss. Depth ordering remains center-based.
 
 Chunk culling (`visibleChunks.ts`) rejects whole 16³ blocks against the view
 frustum with bounds that include edge spheres, so rotating the camera can never
-expose holes.
+expose holes. Cube bounds are analytic. Cylinder bounds are exact cached AABBs
+of each transformed RGB block; larger LOD blocks conservatively combine those
+base bounds. The near pass first rejects transformed chunks against the camera's
+search sphere, then tests their individual RGB-mapped positions.
+
+At stride `k = 1`, every model renders all 16,777,216 source colors exactly
+once. Higher LOD strides intentionally sample the RGB index lattice for
+performance, just as they do in cube mode.
+
+Color completeness is an intentional performance trade-off for the cylinder
+modes: they now contain about 28% more spheres than the former clipped lattice,
+and RGB-to-cylinder positioning costs more vertex-shader work. Automatic LOD
+and transformed chunk culling keep that extra work bounded in normal use.
 
 ### Adaptive quality
 
@@ -116,6 +132,8 @@ explicit hooks.
 │       │                       #   cache, max point size query, FrameState type
 │       ├── lattice.ts          # Lattice math: block offsets, coordinate→color,
 │       │                       #   radius scaling, sprite clamp distance
+│       ├── modelGeometry.ts    # RGB→cylinder positions and cached transformed
+│       │                       #   chunk bounds for culling/near-field queries
 │       ├── visibleChunks.ts    # CPU frustum culling of 16³ lattice blocks
 │       ├── spherePoints.ts     # Instanced GL_POINTS far-field pass
 │       ├── sphereQuads.ts      # Instanced camera-facing quad near-field pass
@@ -127,6 +145,7 @@ explicit hooks.
 │           ├── points.frag.glsl    # Point-sprite entry to shared sphere shading
 │           ├── quads.vert.glsl     # Viewport-clamped sphere tangent bounds
 │           ├── quads.frag.glsl     # Quad entry to shared sphere shading
+│           ├── colorModel.glsl     # Shared RGB→HSL/HSV cylinder positioning
 │           ├── common.frag.glsl    # Analytic sphere ray hit, wrap lighting,
 │           │                       #   fog, debug view (shared by both passes)
 │           ├── outline.vert.glsl    # Screen-space outline ribbon expansion

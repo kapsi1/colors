@@ -1,4 +1,3 @@
-import { modelColor, insideModel } from '../colorModel'
 import { config } from '../config'
 import type { vec3 } from 'gl-matrix'
 import {
@@ -7,10 +6,12 @@ import {
   sphereRadius,
   spriteClampDistance,
 } from './lattice'
+import { modelChunkBounds, rgbIndexModelPosition } from './modelGeometry'
 import { createProgram, setShadingUniforms, Uniforms, type FrameState } from './gl'
 import vertSrc from './shaders/quads.vert.glsl?raw'
 import fragSrc from './shaders/quads.frag.glsl?raw'
 import commonSrc from './shaders/common.frag.glsl?raw'
+import colorModelSrc from './shaders/colorModel.glsl?raw'
 
 const STRIDE_FLOATS = 7
 
@@ -27,7 +28,8 @@ export class SphereQuads {
 
   constructor(gl: WebGL2RenderingContext) {
     this.gl = gl
-    this.prog = createProgram(gl, vertSrc, fragSrc.replace('%%COMMON%%', commonSrc))
+    this.prog = createProgram(gl, vertSrc.replace('%%COLOR_MODEL%%', colorModelSrc),
+      fragSrc.replace('%%COMMON%%', commonSrc))
     this.u = new Uniforms(gl, this.prog)
     this.vao = gl.createVertexArray()!
     this.buf = gl.createBuffer()!
@@ -62,6 +64,9 @@ export class SphereQuads {
     if (maxInstances <= 0) return this.count = 0
     const nearDist = spriteClampDistance(k, projScale, maxPoint)
     const rk = sphereRadius(k)
+    if (config.colorModel !== 'rgb') {
+      return this.count = this.buildModel(pos, k, nearDist + rk, rk, maxInstances)
+    }
     const D = (nearDist + rk) / spacing
     const D2 = D * D
     const off = blockOffset(k)
@@ -87,8 +92,6 @@ export class SphereQuads {
           const cx = ix * k + off
           const dx = cx - camL[0]
           if (dx * dx + dy * dy + dz * dz > D2) continue
-          const px = (cx - half) / half, py = (cy - half) / half, pz = (cz - half) / half
-          if (!insideModel(px, py, pz)) continue
           const o = count * STRIDE_FLOATS
           data[o] = (cx - half) * spacing
           data[o + 1] = (cy - half) * spacing
@@ -96,12 +99,6 @@ export class SphereQuads {
           data[o + 3] = latticeColor(cx)
           data[o + 4] = latticeColor(cy)
           data[o + 5] = latticeColor(cz)
-          if (config.colorModel !== 'rgb') {
-            const color = modelColor(px, py, pz, config.colorModel)
-            data[o + 3] = color[0]
-            data[o + 4] = color[1]
-            data[o + 5] = color[2]
-          }
           data[o + 6] = rk
           count++
           if (count >= maxInstances) break outer
@@ -109,6 +106,66 @@ export class SphereQuads {
       }
     }
     return this.count = count
+  }
+
+  private buildModel(
+    pos: vec3,
+    k: number,
+    nearDistance: number,
+    radius: number,
+    maxInstances: number,
+  ): number {
+    const model = config.colorModel === 'hsl' ? 'hsl' : 'hsv'
+    const n = config.latticeSize / k
+    const size = Math.min(16, n)
+    const off = blockOffset(k)
+    const scale = config.latticeHalf * config.spacing
+    const D2 = nearDistance * nearDistance
+    const bounds = new Float64Array(6)
+    const p = new Float64Array(3)
+    const data = this.data
+    let count = 0
+    outer: for (let z = 0; z < n; z += size) {
+      for (let y = 0; y < n; y += size) {
+        for (let x = 0; x < n; x += size) {
+          modelChunkBounds(model, x, y, z, k, bounds)
+          let chunkD2 = 0
+          for (let axis = 0; axis < 3; axis++) {
+            const lo = bounds[axis] * scale
+            const hi = bounds[axis + 3] * scale
+            const d = pos[axis] < lo ? lo - pos[axis] : pos[axis] > hi ? pos[axis] - hi : 0
+            chunkD2 += d * d
+          }
+          if (chunkD2 > D2) continue
+          for (let iz = z; iz < Math.min(n, z + size); iz++) {
+            const b = Math.min(255, Math.floor(iz * k + off + 0.5))
+            for (let iy = y; iy < Math.min(n, y + size); iy++) {
+              const g = Math.min(255, Math.floor(iy * k + off + 0.5))
+              for (let ix = x; ix < Math.min(n, x + size); ix++) {
+                const r = Math.min(255, Math.floor(ix * k + off + 0.5))
+                rgbIndexModelPosition(r, g, b, model, p)
+                const wx = p[0] * scale
+                const wy = p[1] * scale
+                const wz = p[2] * scale
+                const dx = wx - pos[0], dy = wy - pos[1], dz = wz - pos[2]
+                if (dx * dx + dy * dy + dz * dz > D2) continue
+                const o = count * STRIDE_FLOATS
+                data[o] = wx
+                data[o + 1] = wy
+                data[o + 2] = wz
+                data[o + 3] = r / 255
+                data[o + 4] = g / 255
+                data[o + 5] = b / 255
+                data[o + 6] = radius
+                count++
+                if (count >= maxInstances) break outer
+              }
+            }
+          }
+        }
+      }
+    }
+    return count
   }
 
   render(f: FrameState, count: number): void {
@@ -119,6 +176,10 @@ export class SphereQuads {
     const u = this.u
     gl.uniformMatrix4fv(u.loc('uView'), false, f.view)
     gl.uniformMatrix4fv(u.loc('uProj'), false, f.proj)
+    gl.uniform1i(u.loc('uColorModel'),
+      config.colorModel === 'rgb' ? 0 : config.colorModel === 'hsl' ? 1 : 2)
+    gl.uniform1f(u.loc('uLatticeHalf'), config.latticeHalf)
+    gl.uniform1f(u.loc('uSpacing'), f.spacing)
     gl.uniform1f(u.loc('uTanHalf'), f.tanHalf)
     gl.uniform1f(u.loc('uAspect'), f.aspect)
     gl.uniform2f(u.loc('uViewport'), gl.drawingBufferWidth, gl.drawingBufferHeight)

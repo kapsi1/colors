@@ -1,5 +1,6 @@
 - Add JS regression tests for bug fixes
 - Add JS tests for new features
 - Update ARCHITECTURE.md with new features
+- make sure performance is not regressing, unless it's necessary for a new feature. In that case make it clear to the user that performance is being traded for a new feature.
 - use pnpm for package management
 - reuse the dev server if it's running, instead of starting a new one

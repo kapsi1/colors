@@ -6,6 +6,7 @@ import { load } from './loadTs.mjs'
 const { config } = await load('../src/config.ts')
 const { LodController } = await load('../src/lod.ts')
 const { visibleChunks, CHUNK_SIZE } = await load('../src/renderer/visibleChunks.ts')
+const { rgbIndexModelPosition } = await load('../src/renderer/modelGeometry.ts')
 const { GpuTimer } = await load('../src/renderer/gpuTimer.ts')
 const defaults = structuredClone(config)
 beforeEach(() => Object.assign(config, structuredClone(defaults)))
@@ -114,11 +115,21 @@ for (const model of ['rgb', 'hsl', 'hsv']) test(model + ' visible sphere centers
     const count = visibleChunks({ view, n, k, spacing: 1, tanHalf, aspect }, offsets)
     const retained = new Set()
     for (let i = 0; i < count; i++) retained.add(Array.from(offsets.subarray(i * 3, i * 3 + 3)).join(','))
+    const p = new Float64Array(3)
     for (let z = 0; z < n; z += 3) for (let y = 0; y < n; y += 3) for (let x = 0; x < n; x += 3) {
-      const wx = x * k + (k - 1) / 2 - config.latticeHalf
-      const wy = y * k + (k - 1) / 2 - config.latticeHalf
-      const wz = z * k + (k - 1) / 2 - config.latticeHalf
-      if (model !== 'rgb' && wx * wx + wz * wz > config.latticeHalf ** 2) continue
+      const off = (k - 1) / 2
+      let wx, wy, wz
+      if (model === 'rgb') {
+        wx = x * k + off - config.latticeHalf
+        wy = y * k + off - config.latticeHalf
+        wz = z * k + off - config.latticeHalf
+      } else {
+        const c = [x, y, z].map(v => Math.min(255, Math.floor(v * k + off + 0.5)))
+        rgbIndexModelPosition(c[0], c[1], c[2], model, p)
+        wx = p[0] * config.latticeHalf
+        wy = p[1] * config.latticeHalf
+        wz = p[2] * config.latticeHalf
+      }
       const depth = -(view[2] * wx + view[6] * wy + view[10] * wz + view[14])
       const vx = view[0] * wx + view[4] * wy + view[8] * wz + view[12]
       const vy = view[1] * wx + view[5] * wy + view[9] * wz + view[13]

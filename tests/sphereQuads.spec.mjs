@@ -4,7 +4,7 @@ import { mat4, vec3 } from 'gl-matrix'
 
 const shader = name => readFileSync(new URL(`../src/renderer/shaders/${name}`, import.meta.url), 'utf8')
 const sources = {
-  vertex: shader('quads.vert.glsl'),
+  vertex: shader('quads.vert.glsl').replace('%%COLOR_MODEL%%', shader('colorModel.glsl')),
   fragment: shader('quads.frag.glsl').replace('%%COMMON%%', shader('common.frag.glsl')),
 }
 
@@ -58,6 +58,7 @@ test('near-sphere pixels match independent ray intersections while turning', asy
     gl.depthFunc(gl.LEQUAL)
     const u = name => gl.getUniformLocation(program, name)
     gl.uniform1f(u('uDebugView'), 1)
+    gl.uniform1i(u('uColorModel'), 0)
     gl.uniform2f(u('uFogRange'), 120, 600)
     gl.uniform2f(u('uViewport'), canvas.width, canvas.height)
     gl.vertexAttrib3f(gl.getAttribLocation(program, 'aColor'), 1, 0, 0)
