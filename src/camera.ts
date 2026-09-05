@@ -16,13 +16,14 @@ export class Camera {
   private center: vec3 = vec3.create()
 
   constructor() {
-    const s = config.startOffset
     this.pos = vec3.fromValues(
-      s[0] * config.latticeSize,
-      s[1] * config.latticeSize,
-      s[2] * config.latticeSize,
+      config.startPos[0],
+      config.startPos[1],
+      config.startPos[2],
     )
-    this.faceTowards(0, 0, 0)
+    const maxPitch = (config.maxPitchDeg * Math.PI) / 180
+    this.yaw = (config.startYawDeg * Math.PI) / 180
+    this.pitch = Math.max(-maxPitch, Math.min(maxPitch, (config.startPitchDeg * Math.PI) / 180))
     this.updateBasis()
     this.updateView()
   }

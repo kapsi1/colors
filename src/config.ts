@@ -31,20 +31,23 @@ export interface Config {
   lodEvalMs: number
   lodUpMs: number
   lodDownMs: number
-  startOffset: [number, number, number]
+  startPos: [number, number, number]
+  startYawDeg: number
+  startPitchDeg: number
 }
 
 export const config: Config = {
   latticeSize: 256,
   latticeHalf: 127.5,
   spacing: 1.0,
-  radius: 0.4,
+  radius: 0.2,
   fovDeg: 60,
-  near: 0.05,
-  far: 1200,
+  // near: 0.05,
+  near: 0.5,
+  far: 600,
   bg: [0.9411765, 0.9411765, 0.9411765],
   fogStartFrac: 0.2,
-  baseSpeed: 8,
+  baseSpeed: 50,
   boost: 4,
   wheelFactor: 1.15,
   minSpeed: 0.1,
@@ -67,5 +70,7 @@ export const config: Config = {
   lodEvalMs: 250,
   lodUpMs: 33,
   lodDownMs: 12,
-  startOffset: [-0.9, 0.35, -0.9],
+  startPos: [165.7, 159.9, 165.79],
+  startYawDeg: -38.8,
+  startPitchDeg: -32.8,
 }

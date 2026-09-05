@@ -34,6 +34,8 @@ const MOVE_CODES = new Set([
 export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consume(): FrameIntent } {
   const held = new Set<string>()
   let dragging = false
+  let mouseDragging = false
+  let activePointerId: number | null = null
   let lastX = 0
   let lastY = 0
   let lookDX = 0
@@ -90,10 +92,20 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
     held.delete(e.code)
   })
 
+  const endDrag = (): void => {
+    dragging = false
+    mouseDragging = false
+    canvas.classList.remove('grabbing')
+    if (activePointerId !== null && canvas.hasPointerCapture(activePointerId)) {
+      canvas.releasePointerCapture(activePointerId)
+    }
+    activePointerId = null
+    if (document.pointerLockElement === canvas) document.exitPointerLock()
+  }
+
   window.addEventListener('blur', () => {
     held.clear()
-    dragging = false
-    canvas.classList.remove('grabbing')
+    endDrag()
   })
 
   canvas.addEventListener('pointerdown', (e) => {
@@ -101,10 +113,19 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
     const ae = document.activeElement
     if (ae instanceof HTMLElement && ae !== document.body) ae.blur()
     dragging = true
+    mouseDragging = e.pointerType === 'mouse'
+    activePointerId = e.pointerId
     lastX = e.clientX
     lastY = e.clientY
     canvas.setPointerCapture(e.pointerId)
     canvas.classList.add('grabbing')
+    if (mouseDragging) {
+      try {
+        void canvas.requestPointerLock().catch(() => {})
+      } catch {
+        // Pointer capture remains as the fallback when pointer lock is unavailable.
+      }
+    }
   })
 
   canvas.addEventListener('pointermove', (e) => {
@@ -118,12 +139,11 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
     lookDY -= mdy * rad
   })
 
-  const endDrag = (): void => {
-    dragging = false
-    canvas.classList.remove('grabbing')
-  }
   canvas.addEventListener('pointerup', endDrag)
   canvas.addEventListener('pointercancel', endDrag)
+  document.addEventListener('pointerlockchange', () => {
+    if (mouseDragging && document.pointerLockElement !== canvas) endDrag()
+  })
   canvas.addEventListener('contextmenu', (e) => e.preventDefault())
 
   canvas.addEventListener(
