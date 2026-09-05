@@ -16,7 +16,6 @@ export interface Config {
   velTau: number
   degPerPixel: number
   sensitivity: number
-  maxPitchDeg: number
   dprCap: number
   renderScale: number
   userRenderScale: number
@@ -55,7 +54,6 @@ export const config: Config = {
   velTau: 0.08,
   degPerPixel: 0.2,
   sensitivity: 1.0,
-  maxPitchDeg: 89.9,
   dprCap: 2,
   renderScale: 1.0,
   userRenderScale: 1.0,

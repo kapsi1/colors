@@ -1,0 +1,154 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { load } from './loadTs.mjs'
+
+const { config } = await load('../src/config.ts')
+const { Camera } = await load('../src/camera.ts')
+const defaults = structuredClone(config)
+
+const d2r = d => (d * Math.PI) / 180
+const angle = (a, b) => {
+  const cross = [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ]
+  return Math.atan2(Math.hypot(...cross), a[0] * b[0] + a[1] * b[1] + a[2] * b[2])
+}
+function closeVec(actual, expected, eps = 1e-6, label = '') {
+  for (let i = 0; i < 3; i++) {
+    assert.ok(
+      Math.abs(actual[i] - expected[i]) < eps,
+      `${label}: ${Array.from(actual)} vs ${expected}`,
+    )
+  }
+}
+function freshCam() {
+  Object.assign(config, structuredClone(defaults))
+  return new Camera()
+}
+
+// View direction of the previous yaw/pitch camera, for behavior parity while
+// the orientation stays roll-free inside the old pitch clamp.
+const oldFwd = (yaw, pitch) => {
+  const cp = Math.cos(pitch)
+  return [cp * Math.sin(yaw), Math.sin(pitch), -cp * Math.cos(yaw)]
+}
+
+test('pure vertical drags match the previous steering inside +/-90 degrees', () => {
+  for (const [yawDeg, pitchDeg] of [[0, 0], [30, 20], [150, -40], [-170, 60]]) {
+    const cam = freshCam()
+    cam.setOrientation(d2r(yawDeg), d2r(pitchDeg))
+    let pitch = d2r(pitchDeg)
+    for (const dy of [-0.1, 0.15, -0.35, 0.2]) {
+      cam.addLook(0, dy)
+      pitch += dy
+      closeVec(cam.fwd, oldFwd(d2r(yawDeg), pitch), 1e-6, `vertical drag from ${yawDeg}/${pitchDeg}`)
+      closeVec(cam.right, [Math.cos(d2r(yawDeg)), 0, Math.sin(d2r(yawDeg))], 1e-6, 'right axis')
+    }
+  }
+})
+
+test('pure horizontal drags at level pitch match the previous steering', () => {
+  for (const yawDeg of [0, 30, 150, -170]) {
+    const cam = freshCam()
+    cam.setOrientation(d2r(yawDeg), 0)
+    let yaw = d2r(yawDeg)
+    for (const dx of [0.05, -0.2, 0.3]) {
+      cam.addLook(dx, 0)
+      yaw += dx
+      closeVec(cam.fwd, oldFwd(yaw, 0), 1e-6, `horizontal drag from ${yawDeg}`)
+      closeVec(cam.right, [Math.cos(yaw), 0, Math.sin(yaw)], 1e-6, 'right axis')
+      closeVec(cam.up, [0, 1, 0], 1e-6, 'level up')
+    }
+  }
+})
+
+test('horizontal drags while pitched turn around the camera up axis', () => {
+  const cam = freshCam()
+  cam.setOrientation(0.4, d2r(45))
+  const f0 = [...cam.fwd]
+  const up0 = [...cam.up]
+  cam.addLook(d2r(25), 0)
+  assert.ok(Math.abs(angle(f0, cam.fwd) - d2r(25)) < 1e-6, 'turn amount')
+  assert.ok(Math.abs(cam.fwd[0] * up0[0] + cam.fwd[1] * up0[1] + cam.fwd[2] * up0[2]) < 1e-6,
+    'stays perpendicular to the camera up axis')
+})
+
+test('vertical dragging keeps turning smoothly past straight up', () => {
+  const cam = freshCam()
+  cam.setOrientation(0, 0)
+  let prev = [...cam.fwd]
+  let prevUp = [...cam.up]
+  for (let i = 1; i <= 200; i++) {
+    cam.addLook(0, d2r(1))
+    assert.ok(Math.abs(angle(prev, cam.fwd) - d2r(1)) < 1e-6, `fwd step ${i}`)
+    assert.ok(Math.abs(angle(prevUp, cam.up) - d2r(1)) < 1e-6, `up step ${i}`)
+    assert.ok(Math.abs(cam.fwd[0] * cam.up[0] + cam.fwd[1] * cam.up[1] + cam.fwd[2] * cam.up[2]) < 1e-5)
+    prev = [...cam.fwd]
+    prevUp = [...cam.up]
+  }
+  closeVec(cam.fwd, [0, Math.sin(d2r(200)), -Math.cos(d2r(200))], 1e-4, '200 degrees up')
+  assert.ok(Math.abs(cam.pitch - d2r(-20)) < 1e-4, 'pitch reports the wrapped view direction')
+  assert.ok(Math.abs(cam.yaw - Math.PI) < 1e-4)
+})
+
+test('a full 360 degree vertical drag returns to the starting orientation', () => {
+  const cam = freshCam()
+  cam.setOrientation(0.6, 0.4)
+  const f0 = [...cam.fwd]
+  const u0 = [...cam.up]
+  const r0 = [...cam.right]
+  for (let i = 0; i < 360; i++) cam.addLook(0, d2r(1))
+  closeVec(cam.fwd, f0, 1e-4, 'fwd')
+  closeVec(cam.up, u0, 1e-4, 'up')
+  closeVec(cam.right, r0, 1e-4, 'right')
+})
+
+test('horizontal dragging still turns the view when looking straight up', () => {
+  const cam = freshCam()
+  cam.setOrientation(0, d2r(90))
+  const f0 = [...cam.fwd]
+  cam.addLook(d2r(30), 0)
+  assert.ok(Math.abs(angle(f0, cam.fwd) - d2r(30)) < 1e-6, 'no dead zone at the pole')
+  assert.ok(Math.abs(angle(cam.fwd, cam.up) - d2r(90)) < 1e-6, 'up stays perpendicular')
+})
+
+test('yaw and pitch report the view direction', () => {
+  const cam = freshCam()
+  cam.setOrientation(d2r(120), d2r(-45))
+  assert.ok(Math.abs(cam.yaw - d2r(120)) < 1e-6)
+  assert.ok(Math.abs(cam.pitch - d2r(-45)) < 1e-6)
+})
+
+test('orientationVersion tracks orientation changes but not movement', () => {
+  const cam = freshCam()
+  const v0 = cam.orientationVersion
+  cam.addLook(0.01, 0.02)
+  assert.ok(cam.orientationVersion > v0)
+  const v1 = cam.orientationVersion
+  cam.setPose(1, 2, 3)
+  assert.equal(cam.orientationVersion, v1)
+  cam.setOrientation(0, 0)
+  assert.ok(cam.orientationVersion > v1)
+})
+
+test('faceTowards aims the camera at a point', () => {
+  const cam = freshCam()
+  cam.setPose(5, 5, 5)
+  cam.faceTowards(0, 0, 0)
+  closeVec(cam.fwd, [-1, -1, -1].map(v => v / Math.sqrt(3)), 1e-6)
+})
+
+test('the basis stays orthonormal after long mixed turning', () => {
+  const cam = freshCam()
+  for (let i = 0; i < 2000; i++) {
+    cam.addLook(Math.sin(i * 1.7) * 0.3, Math.cos(i * 0.9) * 0.3)
+  }
+  const { fwd: f, right: r, up: u } = cam
+  const len = v => Math.hypot(v[0], v[1], v[2])
+  for (const v of [f, r, u]) assert.ok(Math.abs(len(v) - 1) < 1e-6)
+  assert.ok(Math.abs(f[0] * r[0] + f[1] * r[1] + f[2] * r[2]) < 1e-6)
+  assert.ok(Math.abs(f[0] * u[0] + f[1] * u[1] + f[2] * u[2]) < 1e-6)
+  assert.ok(Math.abs(r[0] * u[0] + r[1] * u[1] + r[2] * u[2]) < 1e-6)
+})

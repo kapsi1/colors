@@ -1,18 +1,25 @@
-import { mat4, vec3 } from 'gl-matrix'
+import { mat4, quat, vec3 } from 'gl-matrix'
 import { config } from './config'
 import type { FrameIntent } from './input'
 
-const UP: vec3 = vec3.fromValues(0, 1, 0)
+const FWD0: vec3 = vec3.fromValues(0, 0, -1)
+const RIGHT0: vec3 = vec3.fromValues(1, 0, 0)
+const UP0: vec3 = vec3.fromValues(0, 1, 0)
 
+// The camera keeps its full orientation in a quaternion and mouse deltas turn
+// it around its own right/up axes. Vertical turning therefore continues past
+// the old +/-90 degree pitch bounds like horizontal turning, rolling over
+// smoothly instead of stopping at a pole.
 export class Camera {
   pos: vec3
-  yaw = 0
-  pitch = 0
   vel: vec3 = vec3.create()
   fwd: vec3 = vec3.create()
   right: vec3 = vec3.create()
+  up: vec3 = vec3.create()
   readonly view: mat4 = mat4.create()
   readonly proj: mat4 = mat4.create()
+  orientationVersion = 0
+  private readonly orient = quat.create()
   private center: vec3 = vec3.create()
 
   constructor() {
@@ -21,11 +28,10 @@ export class Camera {
       config.startPos[1],
       config.startPos[2],
     )
-    const maxPitch = (config.maxPitchDeg * Math.PI) / 180
-    this.yaw = (config.startYawDeg * Math.PI) / 180
-    this.pitch = Math.max(-maxPitch, Math.min(maxPitch, (config.startPitchDeg * Math.PI) / 180))
-    this.updateBasis()
-    this.updateView()
+    this.setOrientation(
+      (config.startYawDeg * Math.PI) / 180,
+      (config.startPitchDeg * Math.PI) / 180,
+    )
   }
 
   setPose(x: number, y: number, z: number): void {
@@ -39,25 +45,36 @@ export class Camera {
     const dz = z - this.pos[2]
     const len = Math.hypot(dx, dy, dz)
     if (len < 1e-9) return
-    this.yaw = Math.atan2(dx / len, -dz / len)
-    this.pitch = Math.asin(Math.max(-1, Math.min(1, dy / len)))
-    this.updateBasis()
-    this.updateView()
+    this.setOrientation(
+      Math.atan2(dx / len, -dz / len),
+      Math.asin(Math.max(-1, Math.min(1, dy / len))),
+    )
   }
 
   setOrientation(yawRad: number, pitchRad: number): void {
-    this.yaw = yawRad
-    const maxPitch = (config.maxPitchDeg * Math.PI) / 180
-    this.pitch = Math.max(-maxPitch, Math.min(maxPitch, pitchRad))
+    quat.identity(this.orient)
+    quat.rotateY(this.orient, this.orient, -yawRad)
+    quat.rotateX(this.orient, this.orient, pitchRad)
+    this.orientationVersion++
     this.updateBasis()
     this.updateView()
   }
 
   addLook(dxRad: number, dyRad: number): void {
-    this.yaw += dxRad
-    const maxPitch = (config.maxPitchDeg * Math.PI) / 180
-    this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch + dyRad))
+    quat.rotateY(this.orient, this.orient, -dxRad)
+    quat.rotateX(this.orient, this.orient, dyRad)
+    quat.normalize(this.orient, this.orient)
+    this.orientationVersion++
     this.updateBasis()
+  }
+
+  // View direction as the classic yaw/pitch pair, for URL state.
+  get yaw(): number {
+    return Math.atan2(this.fwd[0], -this.fwd[2])
+  }
+
+  get pitch(): number {
+    return Math.asin(Math.max(-1, Math.min(1, this.fwd[1])))
   }
 
   update(dt: number, intent: FrameIntent): void {
@@ -101,13 +118,13 @@ export class Camera {
   }
 
   private updateBasis(): void {
-    const cp = Math.cos(this.pitch)
-    vec3.set(this.fwd, cp * Math.sin(this.yaw), Math.sin(this.pitch), -cp * Math.cos(this.yaw))
-    vec3.set(this.right, Math.cos(this.yaw), 0, Math.sin(this.yaw))
+    vec3.transformQuat(this.fwd, FWD0, this.orient)
+    vec3.transformQuat(this.right, RIGHT0, this.orient)
+    vec3.transformQuat(this.up, UP0, this.orient)
   }
 
   private updateView(): void {
     vec3.add(this.center, this.pos, this.fwd)
-    mat4.lookAt(this.view, this.pos, this.center, UP)
+    mat4.lookAt(this.view, this.pos, this.center, this.up)
   }
 }

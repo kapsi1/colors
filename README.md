@@ -104,7 +104,7 @@ camera poses, a full turn, varied FOV/aspect ratios, and near/eye-plane crossing
 | `Space` / `Ctrl` or `C` | Move up / down |
 | `Shift` | ×4 speed boost |
 | Mouse wheel | Increase / decrease maximum move speed |
-| Left-drag | Look around (mouse pointer lock when available) |
+| Left-drag | Look around — turning is unbounded in every direction (pointer lock when available) |
 | Mouse wheel in settings panel | Native scroll |
 | `1`–`5` | Manual LOD stride (1, 2, 4, 8, 16) |
 | `0` | Return to automatic LOD |
@@ -125,7 +125,7 @@ settings panel — the panel updates the hash, and a hash updates the panel.
 | Parameter | Example | Meaning |
 | --- | --- | --- |
 | `cam` | `cam=160,160,160` | Camera position (lattice space); the camera then faces the origin |
-| `yaw`, `pitch` | `yaw=-38.8&pitch=-32.8` | View orientation in degrees |
+| `yaw`, `pitch` | `yaw=-38.8&pitch=-32.8` | View orientation in degrees (derived from the view direction; roll gained by flipping over is not restored) |
 | `fov` | `fov=90` | Field of view in degrees (40–100) |
 | `sp` | `sp=1.5` | Sphere spacing (0.5–2) |
 | `r` | `r=0.4` | Sphere radius (0.02 – (spacing−0.02)/2) |
@@ -240,8 +240,9 @@ explicit hooks.
 │   │                           #   loop, dirty-signature check, context loss,
 │   │                           #   fullscreen, window.__cube debug handle
 │   ├── config.ts               # Central Config interface + singleton values
-│   ├── camera.ts               # Flythrough camera: yaw/pitch, smoothed velocity,
-│   │                           #   view/projection matrices, cube distance
+  │   ├── camera.ts               # Free-look camera: quaternion orientation with unbounded
+  │   │                           #   turning on both axes, smoothed velocity, view/projection
+  │   │                           #   matrices, cube distance
 │   ├── input.ts                # Keyboard/pointer/wheel handling → FrameIntent;
 │   │                           #   pointer lock with capture fallback, hooks for
 │   │                           #   Tab/Esc/F/H/digit shortcuts

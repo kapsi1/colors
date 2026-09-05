@@ -138,7 +138,7 @@ function main(): void {
     cam.faceTowards(0, 0, 0)
   }
   const yaw = numParam('yaw', -3600, 3600)
-  const pitch = numParam('pitch', -89.9, 89.9)
+  const pitch = numParam('pitch', -90, 90)
   if (yaw !== null || pitch !== null) {
     cam.setOrientation(
       yaw !== null ? deg2rad(yaw) : cam.yaw,
@@ -312,7 +312,7 @@ function main(): void {
     cam.updateProj(canvas.width / canvas.height)
 
     const sig = [
-      cam.pos[0], cam.pos[1], cam.pos[2], cam.yaw, cam.pitch,
+      cam.pos[0], cam.pos[1], cam.pos[2], cam.orientationVersion,
       k, canvas.width, canvas.height, generation,
       config.fovDeg, config.spacing, config.radius, config.far,
       config.fog ? 1 : 0, config.shading ? 1 : 0, config.axes ? 1 : 0,

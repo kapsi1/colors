@@ -48,7 +48,7 @@ export class Minimap {
     const size = this.canvas.clientWidth
     const dpr = Math.min(window.devicePixelRatio || 1, config.dprCap)
     if (!size) return
-    const signature = [size, dpr, ...cam.pos, cam.yaw, cam.pitch, aspect, config.spacing, config.fovDeg, config.far].join(',')
+    const signature = [size, dpr, ...cam.pos, cam.orientationVersion, aspect, config.spacing, config.fovDeg, config.far].join(',')
     if (signature === this.signature) return
     this.signature = signature
     const pixels = Math.round(size * dpr)
