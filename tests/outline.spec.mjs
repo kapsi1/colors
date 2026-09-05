@@ -69,18 +69,18 @@ async function render(page, eye) {
     gl.drawArrays(gl.TRIANGLES, 0, count)
     const pixels = new Uint8Array(160 * 160 * 4)
     gl.readPixels(0, 0, 160, 160, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
-    let nonBinary = 0, black = 0
+    let unexpected = 0, gray = 0
     for (let i = 0; i < 160 * 160; i++) {
       const r = pixels[i * 4], g = pixels[i * 4 + 1], b = pixels[i * 4 + 2]
       const white = r === 255 && g === 255 && b === 255
-      const ink = r === 0 && g === 0 && b === 0
-      if (!white && !ink) nonBinary++
-      if (ink) black++
+      const ink = r === 128 && g === 128 && b === 128
+      if (!white && !ink) unexpected++
+      if (ink) gray++
     }
     const runs = []
     let run = 0
     for (let y = 0; y <= 160; y++) {
-      const ink = y < 160 && pixels[(y * 160 + 80) * 4] === 0
+      const ink = y < 160 && pixels[(y * 160 + 80) * 4] === 128
       if (ink) { run++ } else { if (run > 0) runs.push({ start: y - run, len: run }); run = 0 }
     }
     let longest = null
@@ -90,19 +90,19 @@ async function render(page, eye) {
       const row = longest.start + (longest.len >> 1)
       let minCol = -1, maxCol = -1
       for (let x = 0; x < 160; x++) {
-        if (pixels[(row * 160 + x) * 4] === 0) { if (minCol < 0) minCol = x; maxCol = x }
+        if (pixels[(row * 160 + x) * 4] === 128) { if (minCol < 0) minCol = x; maxCol = x }
       }
       extent = { row, minCol, maxCol }
     }
-    return { error: gl.getError(), nonBinary, black, runs, extent }
+    return { error: gl.getError(), unexpected, gray, runs, extent }
   }, payload)
 }
 
-test('outline draws two black ribbons of the configured screen-space width', async ({ page }) => {
+test('outline draws two gray ribbons of the configured screen-space width', async ({ page }) => {
   const result = await render(page, [0, 0, 300])
   expect(result.error).toBe(0)
-  expect(result.nonBinary).toBe(0)
-  expect(result.black).toBeGreaterThan(0)
+  expect(result.unexpected).toBe(0)
+  expect(result.gray).toBeGreaterThan(0)
   expect(result.runs.length).toBe(2)
   for (const run of result.runs) {
     expect(run.len).toBeGreaterThanOrEqual(2)
@@ -121,7 +121,7 @@ test('outline stays well-formed when edges cross the near plane', async ({ page 
   const b = config.latticeHalf * config.spacing + config.radius + 0.1 * config.spacing
   const result = await render(page, [b, b, b])
   expect(result.error).toBe(0)
-  expect(result.nonBinary).toBe(0)
-  expect(result.black).toBeGreaterThan(0)
-  expect(result.black).toBeLessThan(160 * 160 * 0.5)
+  expect(result.unexpected).toBe(0)
+  expect(result.gray).toBeGreaterThan(0)
+  expect(result.gray).toBeLessThan(160 * 160 * 0.5)
 })

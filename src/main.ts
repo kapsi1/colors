@@ -138,7 +138,7 @@ function main(): void {
     cam.faceTowards(0, 0, 0)
   }
   const yaw = numParam('yaw', -3600, 3600)
-  const pitch = numParam('pitch', -90, 90)
+  const pitch = numParam('pitch', -3600, 3600)
   if (yaw !== null || pitch !== null) {
     cam.setOrientation(
       yaw !== null ? deg2rad(yaw) : cam.yaw,

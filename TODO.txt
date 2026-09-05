@@ -13,9 +13,9 @@ acting as a minimap. Also show camera's cone of vision.
   Add a color model select control in top left box - move speedometer to the left, and add a radio-button type control to the right of the
   speedometer. Style the control so it matches look and feel of the existing UI.
   The minimap should also be updated.
-[x] Remove axes from the main cube. Keep the cube outline, but make it a bit thicker and black.
+[x] Remove axes from the main cube. Keep the cube outline, but make it a bit thicker and gray.
 [x] In the top left box move the color swatch to the left, and add hex color display, inline
 [x] When hiding the HUD, also hide all the other elements, like settings and help buttons
-[ ] Add an outer boundary, so that camera can't go where the cube won't be visible anymore because the distance is too big.
+[x] Add an outer boundary, so that camera can't go where the cube won't be visible anymore because the distance is too big.
 [x] Moving mouse left/right keeps turning the camera, but up/down is bounded. There's no "up" and "down" in this space, so make
   up/down mouse work the same as left right.

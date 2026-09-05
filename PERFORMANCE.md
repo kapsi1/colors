@@ -8,6 +8,10 @@ return to automatic quality.
 
 The renderer culls blocks outside the camera's view before submitting spheres,
 caches the minimap background, and reuses nearby sphere data while turning.
+Zero mouse-look deltas do not advance the camera orientation version, so the
+scene signature stays unchanged while idle: the render loop keeps servicing
+input and HUD state, but submits no GPU scene work and URL persistence can
+settle after movement or settings changes.
 Automatic quality first reduces resolution in small steps, then alternates
 resolution and sphere detail. Completed GPU timing queries, when supported,
 allow it to leave rendering headroom even at 60 FPS. Recovery requires sustained
@@ -19,8 +23,8 @@ hardware, browser scheduling and other applications still affect frame delivery.
 The controller needs several active frames to respond to a new workload. Without
 GPU timing support, recovery is deliberately conservative on a 60 Hz display.
 
-Validation: `npm test` runs controller, culling and GPU-query regression tests;
-`npm run build` checks TypeScript and builds the application.
+Validation: `pnpm test` runs camera, controller, culling, HUD and GPU-query
+regression tests; `pnpm build` checks TypeScript and builds the application.
 
 Near-sphere quads use per-axis tangent bounds clipped to the viewport instead
 of oversized, rotated billboards. This bounds their raster area and removes

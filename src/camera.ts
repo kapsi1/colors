@@ -1,23 +1,17 @@
-import { mat4, quat, vec3 } from 'gl-matrix'
+import { mat4, vec3 } from 'gl-matrix'
 import { config } from './config'
 import type { FrameIntent } from './input'
 
-const FWD0: vec3 = vec3.fromValues(0, 0, -1)
-const RIGHT0: vec3 = vec3.fromValues(1, 0, 0)
-const UP0: vec3 = vec3.fromValues(0, 1, 0)
-
 // The boundary keeps the whole cube on screen: 3.2 half-extents let the corner
-// view of the cube fit the field of view with a margin, and half the view
+// view of the cube fit the field of view with a margin, and 60% of the view
 // distance keeps it clear of the far plane and the fog.
 const BOUNDARY_HALF_EXTENTS = 3.2
 const BOUNDARY_VIEW_FRACTION = 0.6
 
-// The camera keeps its full orientation in a quaternion and mouse deltas turn
-// it around its own right/up axes. Vertical turning therefore continues past
-// the old +/-90 degree pitch bounds like horizontal turning, rolling over
-// smoothly instead of stopping at a pole.
 export class Camera {
   pos: vec3
+  yaw = 0
+  pitch = 0
   vel: vec3 = vec3.create()
   fwd: vec3 = vec3.create()
   right: vec3 = vec3.create()
@@ -25,7 +19,6 @@ export class Camera {
   readonly view: mat4 = mat4.create()
   readonly proj: mat4 = mat4.create()
   orientationVersion = 0
-  private readonly orient = quat.create()
   private center: vec3 = vec3.create()
 
   constructor() {
@@ -58,36 +51,26 @@ export class Camera {
   }
 
   setOrientation(yawRad: number, pitchRad: number): void {
-    quat.identity(this.orient)
-    quat.rotateY(this.orient, this.orient, -yawRad)
-    quat.rotateX(this.orient, this.orient, pitchRad)
+    this.yaw = yawRad
+    this.pitch = pitchRad
     this.orientationVersion++
     this.updateBasis()
     this.updateView()
   }
 
   addLook(dxRad: number, dyRad: number): void {
-    quat.rotateY(this.orient, this.orient, -dxRad)
-    quat.rotateX(this.orient, this.orient, dyRad)
-    quat.normalize(this.orient, this.orient)
+    if (dxRad === 0 && dyRad === 0) return
+    this.yaw += dxRad
+    this.pitch += dyRad
     this.orientationVersion++
     this.updateBasis()
   }
 
-  // View direction as the classic yaw/pitch pair, for URL state.
-  get yaw(): number {
-    return Math.atan2(this.fwd[0], -this.fwd[2])
-  }
-
-  get pitch(): number {
-    return Math.asin(Math.max(-1, Math.min(1, this.fwd[1])))
-  }
-
   update(dt: number, intent: FrameIntent): void {
     const speed = config.baseSpeed * (intent.boost ? config.boost : 1)
-    let tx = this.fwd[0] * intent.forward + this.right[0] * intent.strafe
-    let ty = this.fwd[1] * intent.forward + intent.vertical
-    let tz = this.fwd[2] * intent.forward + this.right[2] * intent.strafe
+    let tx = this.fwd[0] * intent.forward + this.right[0] * intent.strafe + this.up[0] * intent.vertical
+    let ty = this.fwd[1] * intent.forward + this.right[1] * intent.strafe + this.up[1] * intent.vertical
+    let tz = this.fwd[2] * intent.forward + this.right[2] * intent.strafe + this.up[2] * intent.vertical
     const len = Math.hypot(tx, ty, tz)
     if (len > 1e-6) {
       tx = (tx / len) * speed
@@ -125,9 +108,13 @@ export class Camera {
   }
 
   private updateBasis(): void {
-    vec3.transformQuat(this.fwd, FWD0, this.orient)
-    vec3.transformQuat(this.right, RIGHT0, this.orient)
-    vec3.transformQuat(this.up, UP0, this.orient)
+    const cp = Math.cos(this.pitch)
+    const sp = Math.sin(this.pitch)
+    const cy = Math.cos(this.yaw)
+    const sy = Math.sin(this.yaw)
+    vec3.set(this.fwd, cp * sy, sp, -cp * cy)
+    vec3.set(this.right, cy, 0, sy)
+    vec3.set(this.up, -sp * sy, cp, sp * cy)
   }
 
   // The camera is kept within the boundary so the cube always stays visible

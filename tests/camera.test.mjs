@@ -64,15 +64,22 @@ test('pure horizontal drags at level pitch match the previous steering', () => {
   }
 })
 
-test('horizontal drags while pitched turn around the camera up axis', () => {
+test('a closed mouse circle returns to the original view', () => {
   const cam = freshCam()
-  cam.setOrientation(0.4, d2r(45))
+  cam.setOrientation(0.4, 0.3)
   const f0 = [...cam.fwd]
   const up0 = [...cam.up]
-  cam.addLook(d2r(25), 0)
-  assert.ok(Math.abs(angle(f0, cam.fwd) - d2r(25)) < 1e-6, 'turn amount')
-  assert.ok(Math.abs(cam.fwd[0] * up0[0] + cam.fwd[1] * up0[1] + cam.fwd[2] * up0[2]) < 1e-6,
-    'stays perpendicular to the camera up axis')
+  const right0 = [...cam.right]
+  const yaw0 = cam.yaw
+  const pitch0 = cam.pitch
+  for (const [dx, dy] of [[0.25, 0], [0, 0.25], [-0.25, 0], [0, -0.25]]) {
+    cam.addLook(dx, dy)
+  }
+  closeVec(cam.fwd, f0)
+  closeVec(cam.up, up0)
+  closeVec(cam.right, right0)
+  assert.ok(Math.abs(cam.yaw - yaw0) < 1e-12)
+  assert.ok(Math.abs(cam.pitch - pitch0) < 1e-12)
 })
 
 test('vertical dragging keeps turning smoothly past straight up', () => {
@@ -89,8 +96,8 @@ test('vertical dragging keeps turning smoothly past straight up', () => {
     prevUp = [...cam.up]
   }
   closeVec(cam.fwd, [0, Math.sin(d2r(200)), -Math.cos(d2r(200))], 1e-4, '200 degrees up')
-  assert.ok(Math.abs(cam.pitch - d2r(-20)) < 1e-4, 'pitch reports the wrapped view direction')
-  assert.ok(Math.abs(cam.yaw - Math.PI) < 1e-4)
+  assert.ok(Math.abs(cam.pitch - d2r(200)) < 1e-9, 'pitch keeps increasing past the old bound')
+  assert.ok(Math.abs(cam.yaw) < 1e-9)
 })
 
 test('a full 360 degree vertical drag returns to the starting orientation', () => {
@@ -105,12 +112,12 @@ test('a full 360 degree vertical drag returns to the starting orientation', () =
   closeVec(cam.right, r0, 1e-4, 'right')
 })
 
-test('horizontal dragging still turns the view when looking straight up', () => {
+test('horizontal dragging at straight up rotates the view basis without invalid values', () => {
   const cam = freshCam()
   cam.setOrientation(0, d2r(90))
-  const f0 = [...cam.fwd]
+  const up0 = [...cam.up]
   cam.addLook(d2r(30), 0)
-  assert.ok(Math.abs(angle(f0, cam.fwd) - d2r(30)) < 1e-6, 'no dead zone at the pole')
+  assert.ok(angle(up0, cam.up) > d2r(29), 'view rotates around the forward axis at the pole')
   assert.ok(Math.abs(angle(cam.fwd, cam.up) - d2r(90)) < 1e-6, 'up stays perpendicular')
 })
 
@@ -121,9 +128,11 @@ test('yaw and pitch report the view direction', () => {
   assert.ok(Math.abs(cam.pitch - d2r(-45)) < 1e-6)
 })
 
-test('orientationVersion tracks orientation changes but not movement', () => {
+test('orientationVersion ignores zero look and tracks real orientation changes', () => {
   const cam = freshCam()
   const v0 = cam.orientationVersion
+  cam.addLook(0, 0)
+  assert.equal(cam.orientationVersion, v0)
   cam.addLook(0.01, 0.02)
   assert.ok(cam.orientationVersion > v0)
   const v1 = cam.orientationVersion
@@ -131,6 +140,36 @@ test('orientationVersion tracks orientation changes but not movement', () => {
   assert.equal(cam.orientationVersion, v1)
   cam.setOrientation(0, 0)
   assert.ok(cam.orientationVersion > v1)
+})
+
+const still = { forward: 0, strafe: 0, vertical: 0, boost: false, lookDX: 0, lookDY: 0 }
+
+test('A/D movement stays on the horizontal screen axis', () => {
+  for (const pitch of [0.7, 2.2, -2.4]) {
+    const cam = freshCam()
+    cam.setPose(0, 0, 0)
+    cam.setOrientation(0.9, pitch)
+    const p0 = [...cam.pos]
+    cam.update(1 / 60, { ...still, strafe: 1 })
+    const delta = cam.pos.map((v, i) => v - p0[i])
+    assert.ok(delta[0] * cam.right[0] + delta[1] * cam.right[1] + delta[2] * cam.right[2] > 0)
+    assert.ok(Math.abs(delta[0] * cam.fwd[0] + delta[1] * cam.fwd[1] + delta[2] * cam.fwd[2]) < 1e-6)
+    assert.ok(Math.abs(delta[0] * cam.up[0] + delta[1] * cam.up[1] + delta[2] * cam.up[2]) < 1e-6)
+  }
+})
+
+test('Space/Ctrl movement stays on the vertical screen axis', () => {
+  for (const pitch of [0.7, 2.2, -2.4]) {
+    const cam = freshCam()
+    cam.setPose(0, 0, 0)
+    cam.setOrientation(0.9, pitch)
+    const p0 = [...cam.pos]
+    cam.update(1 / 60, { ...still, vertical: 1 })
+    const delta = cam.pos.map((v, i) => v - p0[i])
+    assert.ok(delta[0] * cam.up[0] + delta[1] * cam.up[1] + delta[2] * cam.up[2] > 0)
+    assert.ok(Math.abs(delta[0] * cam.fwd[0] + delta[1] * cam.fwd[1] + delta[2] * cam.fwd[2]) < 1e-6)
+    assert.ok(Math.abs(delta[0] * cam.right[0] + delta[1] * cam.right[1] + delta[2] * cam.right[2]) < 1e-6)
+  }
 })
 
 test('faceTowards aims the camera at a point', () => {

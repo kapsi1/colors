@@ -29,7 +29,7 @@ frame rate on target automatically.
   with a square color swatch spanning both to their left, car-style
   speedometer dial, and an isometric minimap showing camera position, viewing
   frustum, and nearest face projections.
-- **Outer boundary** — the camera is kept within 3.2 cube half-extents and half
+- **Outer boundary** — the camera is kept within 3.2 cube half-extents and 60% of
   the view distance, so the cube always stays on screen with its outline;
   movement slides along the boundary instead of stopping dead.
 - **Shareable state** — the full camera pose and every setting are serialized
@@ -84,9 +84,9 @@ npm test
 ```
 
 Runs the Node.js built-in test runner against `tests/*.test.mjs`, which
-transpiles the relevant TypeScript modules on the fly and covers the LOD
-controller, frustum culling, GPU timer query handling, and the HUD color
-readout (swatch placement, hex formatting, throttling).
+transpiles the relevant TypeScript modules on the fly and covers camera
+orientation and screen-axis movement, the outer boundary, LOD, frustum
+culling, GPU timer query handling, and the HUD color readout.
 
 For the WebGL pixel regression tests, install Chromium once and run:
 
@@ -103,8 +103,9 @@ camera poses, a full turn, varied FOV/aspect ratios, and near/eye-plane crossing
 
 | Input | Action |
 | --- | --- |
-| `W` `A` `S` `D` | Move forward / left / backward / right |
-| `Space` / `Ctrl` or `C` | Move up / down |
+| `W` / `S` | Move forward / backward |
+| `A` / `D` | Move along the camera's horizontal screen axis |
+| `Space` / `Ctrl` or `C` | Move along the camera's vertical screen axis |
 | `Shift` | ×4 speed boost |
 | Mouse wheel | Increase / decrease maximum move speed |
 | Left-drag | Look around — turning is unbounded in every direction (pointer lock when available) |
@@ -128,7 +129,7 @@ settings panel — the panel updates the hash, and a hash updates the panel.
 | Parameter | Example | Meaning |
 | --- | --- | --- |
 | `cam` | `cam=160,160,160` | Camera position (lattice space); the camera then faces the origin |
-| `yaw`, `pitch` | `yaw=-38.8&pitch=-32.8` | View orientation in degrees (derived from the view direction; roll gained by flipping over is not restored) |
+| `yaw`, `pitch` | `yaw=-38.8&pitch=-32.8` | View orientation in degrees |
 | `fov` | `fov=90` | Field of view in degrees (40–100) |
 | `sp` | `sp=1.5` | Sphere spacing (0.5–2) |
 | `r` | `r=0.4` | Sphere radius (0.02 – (spacing−0.02)/2) |
@@ -169,7 +170,7 @@ Each animation frame:
    frame; the GPU pass runs only when something changed.
 5. **Draw** — clear, then three passes: `SpherePoints` (far field),
    `SphereQuads` (near field, rebuilt only when the camera/stride changes),
-   `Outline` (thick black cube outline).
+   `Outline` (thick gray cube outline).
 6. **HUD & persistence** — FPS/RGB/speedometer/minimap update (DOM writes only
    on change, throttled to 4 Hz); the URL hash is rewritten once movement has
    settled (≥ 500 ms cadence, ≥ 300 ms after the last scene change).
@@ -243,9 +244,9 @@ explicit hooks.
 │   │                           #   loop, dirty-signature check, context loss,
 │   │                           #   fullscreen, window.__cube debug handle
 │   ├── config.ts               # Central Config interface + singleton values
-  │   ├── camera.ts               # Free-look camera: quaternion orientation with unbounded
-  │   │                           #   turning on both axes, smoothed velocity, view/projection
-  │   │                           #   matrices, cube distance
+│   ├── camera.ts               # Path-independent yaw/pitch camera: unbounded
+│   │                           #   vertical turning, screen-axis movement,
+│   │                           #   smoothed velocity, boundary and matrices
 │   ├── input.ts                # Keyboard/pointer/wheel handling → FrameIntent;
 │   │                           #   pointer lock with capture fallback, hooks for
 │   │                           #   Tab/Esc/F/H/digit shortcuts
@@ -267,7 +268,7 @@ explicit hooks.
 │       ├── visibleChunks.ts    # CPU frustum culling of 16³ lattice blocks
 │       ├── spherePoints.ts     # Instanced GL_POINTS far-field pass
 │       ├── sphereQuads.ts      # Instanced camera-facing quad near-field pass
-│       ├── outline.ts           # Thick black cube outline (screen-space ribbon)
+│       ├── outline.ts           # Thick gray cube outline (screen-space ribbon)
 │       ├── outlineGeometry.ts   # Outline edges, near-plane clip, quad expansion
 │       ├── gpuTimer.ts         # EXT_disjoint_timer_query_webgl2 wrapper
 │       └── shaders/
@@ -278,9 +279,10 @@ explicit hooks.
 │           ├── common.frag.glsl    # Analytic sphere ray hit, wrap lighting,
 │           │                       #   fog, debug view (shared by both passes)
 │           ├── outline.vert.glsl    # Screen-space outline ribbon expansion
-│           └── outline.frag.glsl    # Solid black outline fill
+│           └── outline.frag.glsl    # Solid gray outline fill
 └── tests/
     ├── loadTs.mjs              # node-side TS loader shared by tests
+    ├── camera.test.mjs         # node:test: camera look/movement/boundary regressions
     ├── hud.test.mjs            # node:test: swatch left, rgb + lowercase hex, outside-cube, throttling
     ├── performance.test.mjs    # node:test: LOD, culling, GPU query semantics
     ├── outline.test.mjs        # node:test: outline edges, near-plane clipping

@@ -46,7 +46,7 @@ export const config: Config = {
   far: 600,
   bg: [0.9411765, 0.9411765, 0.9411765],
   fogStartFrac: 0.2,
-  baseSpeed: 50,
+  baseSpeed: 25,
   boost: 4,
   wheelFactor: 1.15,
   minSpeed: 0.1,
