@@ -16,6 +16,8 @@ export class Minimap {
   private ctx = this.canvas.getContext('2d')!
   private signature = ''
   private faces: Face[] = []
+  private background = document.createElement('canvas')
+  private backgroundKey = ''
 
   constructor() {
     // Small tiles interpolate the actual RGB coordinates over all six faces.
@@ -49,9 +51,13 @@ export class Minimap {
     const signature = [size, dpr, ...cam.pos, cam.yaw, cam.pitch, aspect, config.spacing, config.fovDeg, config.far].join(',')
     if (signature === this.signature) return
     this.signature = signature
-    this.canvas.width = this.canvas.height = Math.round(size * dpr)
+    const pixels = Math.round(size * dpr)
+    if (this.canvas.width !== pixels || this.canvas.height !== pixels) {
+      this.canvas.width = this.canvas.height = pixels
+    }
     const ctx = this.ctx
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, size, size)
 
     const half = config.latticeHalf * config.spacing
     const pos = Array.from(cam.pos, v => v / half) as Point
@@ -77,25 +83,34 @@ export class Minimap {
       if (close) ctx.closePath()
     }
 
-    for (const face of this.faces) {
-      path(face.points)
-      ctx.fillStyle = face.color
-      ctx.fill()
+    const backgroundKey = [pixels, dpr, scale].join(',')
+    if (backgroundKey !== this.backgroundKey) {
+      this.backgroundKey = backgroundKey
+      for (const face of this.faces) {
+        path(face.points)
+        ctx.fillStyle = face.color
+        ctx.fill()
+      }
+      ctx.lineWidth = 1
+      for (const p of vertices) {
+        for (let axis = 0; axis < 3; axis++) {
+          if (p[axis] !== -1) continue
+          const end = [...p] as Point
+          end[axis] = 1
+          // An edge is hidden only when both adjoining faces point away.
+          const behind = p[(axis + 1) % 3] < 0 && p[(axis + 2) % 3] < 0
+          ctx.strokeStyle = behind ? 'rgba(125,135,150,0.25)' : 'rgba(35,45,60,0.55)'
+          path([p, end], false)
+          ctx.stroke()
+        }
+      }
+
+      this.background.width = this.background.height = pixels
+      this.background.getContext('2d')!.drawImage(this.canvas, 0, 0)
+    } else {
+      ctx.drawImage(this.background, 0, 0, size, size)
     }
     ctx.lineWidth = 1
-    for (const p of vertices) {
-      for (let axis = 0; axis < 3; axis++) {
-        if (p[axis] !== -1) continue
-        const end = [...p] as Point
-        end[axis] = 1
-        // An edge is hidden only when both adjoining faces point away.
-        const behind = p[(axis + 1) % 3] < 0 && p[(axis + 2) % 3] < 0
-        ctx.strokeStyle = behind ? 'rgba(125,135,150,0.25)' : 'rgba(35,45,60,0.55)'
-        path([p, end], false)
-        ctx.stroke()
-      }
-    }
-
     ctx.fillStyle = 'rgba(255,190,45,0.13)'
     for (let i = 0; i < 4; i++) {
       path([pos, corners[i], corners[(i + 1) % 4]])

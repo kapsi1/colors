@@ -3,64 +3,97 @@ import { config } from './config'
 export class LodController {
   auto = true
   k = 1
-  emaMs = 16.7
+  emaMs = 1000 / 60
+  private performanceK = 1
+  private distanceK = 1
   private scaleIndex = 0
-  private readonly scaleSteps = [1, 0.75, 0.5]
-  private lastEval = -1e9
-  private upStreak = 0
-  private downStreak = 0
+  private readonly scaleSteps = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.33]
+  private lastEval = 0
+  private slowMs = 0
+  private fastMs = 0
+  private settlingUntil = 0
 
   effectiveScale(userScale: number): number {
-    return Math.min(userScale, this.scaleSteps[this.scaleIndex])
+    return userScale * Math.max(config.minAutoScale, this.scaleSteps[this.scaleIndex])
   }
 
-  update(nowMs: number, frameMs: number, distToCube: number, projScale: number): number {
-    const maxK = config.lodValues[config.lodValues.length - 1]
-    this.emaMs += (Math.min(frameMs, 100) - this.emaMs) * config.emaAlpha
+  resetTiming(): void {
+    this.emaMs = 1000 / config.targetFps
+    this.slowMs = this.fastMs = 0
+    this.lastEval = 0
+    this.settlingUntil = 0
+  }
+
+  update(nowMs: number, frameMs: number, distToCube: number, projScale: number,
+    rendered = true, workMs?: number): number {
+    const budget = 1000 / config.targetFps
+    // Idle frames and background-tab pauses say nothing about rendering cost.
+    if (rendered && frameMs > 0) {
+      frameMs = Math.min(frameMs, 100)
+      this.emaMs += (frameMs - this.emaMs) * config.emaAlpha
+      if (this.auto && nowMs >= this.settlingUntil) {
+        const slow = this.emaMs > budget * 1.035 || (workMs !== undefined && workMs > budget * 0.9)
+        // Halving the stride submits eight times as many spheres. Require
+        // enough measured headroom for that jump, not just for more pixels.
+        const recoveryMargin = this.scaleIndex > 0 ? 0.5 : 0.09
+        const fast = this.emaMs < budget * 1.04 &&
+          (workMs !== undefined ? workMs < budget * recoveryMargin : this.emaMs < budget * recoveryMargin)
+        const pressure = frameMs > budget * 1.035 || (workMs !== undefined && workMs > budget * 0.9)
+        this.slowMs = slow ? Math.max(0, this.slowMs + (pressure ? frameMs : -frameMs)) : 0
+        this.fastMs = fast ? this.fastMs + frameMs : 0
+        if (nowMs - this.lastEval >= config.lodEvalMs) {
+          this.lastEval = nowMs
+          if (this.slowMs >= 180) {
+            this.reduceQuality()
+            this.settlingUntil = nowMs + 400
+            this.slowMs = this.fastMs = 0
+          } else if (this.fastMs >= 6000) {
+            // Large headroom and a long recovery delay avoid visible oscillation.
+            if (this.scaleIndex > 0) this.scaleIndex--
+            else if (this.performanceK > 1) this.performanceK /= 2
+            this.settlingUntil = nowMs + 1500
+            this.slowMs = this.fastMs = 0
+          }
+        }
+      }
+    } else {
+      this.slowMs = this.fastMs = 0
+    }
     if (!this.auto) return this.k
-    if (distToCube <= 2 * config.spacing) return 1
-    if (nowMs - this.lastEval >= config.lodEvalMs) {
-      this.lastEval = nowMs
-      if (this.emaMs > config.lodUpMs) {
-        this.upStreak++
-        this.downStreak = 0
-      } else if (this.emaMs < config.lodDownMs) {
-        this.downStreak++
-        this.upStreak = 0
-      } else {
-        this.upStreak = 0
-        this.downStreak = 0
-      }
-      if (this.upStreak >= 2) {
-        if (this.k < maxK) {
-          this.k = Math.min(this.k * 2, maxK)
-        } else if (this.scaleIndex < this.scaleSteps.length - 1) {
-          this.scaleIndex++
-        }
-        this.upStreak = 0
-      } else if (this.downStreak >= 2) {
-        if (this.k > 1) {
-          this.k = Math.max(this.k / 2, 1)
-        } else if (this.scaleIndex > 0) {
-          this.scaleIndex--
-        }
-        this.downStreak = 0
-      }
+
+    // Subpixel spacing only; full-resolution projection avoids feedback from
+    // dynamic resolution. Hysteresis prevents popping at distance boundaries.
+    const pixelSpacing = config.spacing * projScale / Math.max(distToCube, config.spacing)
+    const maxK = config.lodValues[config.lodValues.length - 1]
+    while (this.distanceK < maxK && pixelSpacing * this.distanceK * 2 < 0.8) this.distanceK *= 2
+    while (this.distanceK > 1 && pixelSpacing * this.distanceK > 1.2) this.distanceK /= 2
+    this.k = Math.max(this.performanceK, this.distanceK)
+    return this.k
+  }
+
+  private reduceQuality(): void {
+    const maxK = config.lodValues[config.lodValues.length - 1]
+    const canScale = this.scaleIndex < this.scaleSteps.length - 1 &&
+      this.scaleSteps[this.scaleIndex] > config.minAutoScale
+    // Try small resolution changes first, then alternate geometry and pixels.
+    if (canScale && (this.scaleIndex < 2 || this.scaleIndex < Math.log2(this.performanceK) + 2)) {
+      this.scaleIndex++
+    } else if (this.performanceK < maxK) {
+      this.performanceK *= 2
+    } else if (canScale) {
+      this.scaleIndex++
     }
-    let floor = 1
-    if (distToCube > 2 * config.spacing) {
-      const need = (4 * distToCube) / (config.spacing * projScale)
-      while (floor < need && floor < maxK) floor *= 2
-    }
-    return Math.max(this.k, floor)
   }
 
   setManual(k: number): void {
+    if (!config.lodValues.includes(k)) return
     this.auto = false
     this.k = k
+    this.resetTiming()
   }
 
   setAuto(): void {
     this.auto = true
+    this.resetTiming()
   }
 }

@@ -107,6 +107,12 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
     held.clear()
     endDrag()
   })
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) return
+    held.clear()
+    lookDX = lookDY = 0
+    endDrag()
+  })
 
   canvas.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return
@@ -129,14 +135,20 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
   })
 
   canvas.addEventListener('pointermove', (e) => {
-    if (!dragging) return
-    const mdx = typeof e.movementX === 'number' ? e.movementX : e.clientX - lastX
-    const mdy = typeof e.movementY === 'number' ? e.movementY : e.clientY - lastY
+    if (!dragging || document.pointerLockElement === canvas) return
+    const mdx = e.clientX - lastX
+    const mdy = e.clientY - lastY
     lastX = e.clientX
     lastY = e.clientY
     const rad = (config.degPerPixel * config.sensitivity * Math.PI) / 180
     lookDX += mdx * rad
     lookDY -= mdy * rad
+  })
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging || document.pointerLockElement !== canvas) return
+    const rad = (config.degPerPixel * config.sensitivity * Math.PI) / 180
+    lookDX += e.movementX * rad
+    lookDY -= e.movementY * rad
   })
 
   canvas.addEventListener('pointerup', endDrag)

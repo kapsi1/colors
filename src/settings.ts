@@ -1,6 +1,7 @@
 import { config } from './config'
 
 export interface SettingsLodHooks {
+  getShareUrl(): string
   getLod(): { auto: boolean; k: number }
   setLodManual(k: number): void
   setLodAuto(): void
@@ -94,6 +95,9 @@ export class SettingsPanel {
           ${config.lodValues.map((v) => `<option value="${v}">${v}</option>`).join('')}
         </select>
       </div>
+      ${this.row('fps', 'Target FPS', '<input aria-label="Target FPS" type="range" id="set-fps" min="60" max="144" step="1">')}
+      <div class="row"><span>Minimum auto scale</span><select aria-label="Minimum auto scale" id="set-minscale"><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option><option value="0.33">33%</option></select></div>
+      <p style="font-size:11px;line-height:1.4;color:#666">Auto LOD adjusts resolution and sphere detail to target your FPS. Minimum scale is relative to the render scale below. Actual FPS also depends on your display and hardware.</p>
       <div class="row"><span>Render scale</span><select id="set-scale"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1">1×</option></select><span class="val" id="v-scale"></span></div>
       <div class="row"><span>Background</span><input type="color" id="set-bg"><span class="val" id="v-bg"></span></div>
       <div class="row"><span>Depth-cue fog</span><input type="checkbox" id="set-fog"></div>
@@ -116,13 +120,15 @@ export class SettingsPanel {
     this.inp.lodauto = q<HTMLInputElement>('set-lodauto')
     this.sel.lodk = q<HTMLSelectElement>('set-lodk')
     this.sel.scale = q<HTMLSelectElement>('set-scale')
+    this.inp.fps = q<HTMLInputElement>('set-fps')
+    this.sel.minscale = q<HTMLSelectElement>('set-minscale')
     this.inp.bg = q<HTMLInputElement>('set-bg')
     this.inp.fog = q<HTMLInputElement>('set-fog')
     this.inp.shade = q<HTMLInputElement>('set-shade')
     this.inp.axes = q<HTMLInputElement>('set-axes')
     this.inp.debug = q<HTMLInputElement>('set-debug')
     this.copyBtn = q<HTMLButtonElement>('set-copy')
-    for (const id of ['spacing', 'radius', 'far', 'speed', 'sens', 'fov', 'scale', 'bg']) {
+    for (const id of ['spacing', 'radius', 'far', 'speed', 'sens', 'fov', 'scale', 'bg', 'fps']) {
       this.val[id] = q<HTMLElement>(`v-${id}`)
     }
     this.inp.spacing.addEventListener('input', () => {
@@ -163,6 +169,14 @@ export class SettingsPanel {
       config.userRenderScale = Number(this.sel.scale.value)
       this.sync(true)
     })
+    this.inp.fps.addEventListener('input', () => {
+      config.targetFps = Number(this.inp.fps.value)
+      this.sync(true)
+    })
+    this.sel.minscale.addEventListener('change', () => {
+      config.minAutoScale = Number(this.sel.minscale.value)
+      this.sync(true)
+    })
     this.inp.bg.addEventListener('input', () => {
       config.bg = hexToRgb(this.inp.bg.value)
       this.sync(true)
@@ -186,7 +200,7 @@ export class SettingsPanel {
     this.copyBtn.addEventListener('click', () => {
       const clip = navigator.clipboard
       if (!clip) return
-      void clip.writeText(window.location.href).then(() => {
+      void clip.writeText(this.lodHooks.getShareUrl()).then(() => {
         this.copyBtn.textContent = 'Copied!'
         window.setTimeout(() => {
           this.copyBtn.textContent = 'Copy link'
@@ -213,6 +227,9 @@ export class SettingsPanel {
       lod.auto,
       lod.k,
       config.renderScale,
+      config.userRenderScale,
+      config.targetFps,
+      config.minAutoScale,
       rgbToHex(config.bg),
       config.fog,
       config.shading,
@@ -233,6 +250,10 @@ export class SettingsPanel {
     this.sel.lodk.value = String(lod.k)
     this.sel.lodk.disabled = lod.auto
     this.sel.scale.value = String(config.userRenderScale)
+    this.inp.fps.value = String(config.targetFps)
+    this.inp.fps.disabled = !lod.auto
+    this.sel.minscale.value = String(config.minAutoScale)
+    this.sel.minscale.disabled = !lod.auto
     this.inp.bg.value = rgbToHex(config.bg)
     this.inp.fog.checked = config.fog
     this.inp.shade.checked = config.shading
@@ -245,6 +266,7 @@ export class SettingsPanel {
     this.val.sens.textContent = `${config.sensitivity.toFixed(2)}×`
     this.val.fov.textContent = `${Math.round(config.fovDeg)}°`
     this.val.scale.textContent = `${Math.round(config.renderScale * 100)}%`
+    this.val.fps.textContent = String(config.targetFps)
     this.val.bg.textContent = rgbToHex(config.bg)
   }
 }

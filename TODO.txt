@@ -1,5 +1,14 @@
 [x] a small semi-transparent color cube in in the corner that shows camera's current position as a dot,
 acting as a minimap. Also show camera's cone of vision.
 [x] while mouse dragging, don't move the cursor, so it's in the same position after releasing the mouse button
-[ ] HUD improvements (to be defined)
-[ ] HSL / HSV cylinders instead of RGB cube (see hsl_hsv.png)
+[ ] HUD improvements:
+  - in the top left box:
+    - don't show frame ms, only FPS
+    - remove second line
+    - remove "camera" from the third line
+  - in mini cube reduce margin around the cube, and remove the text below
+  - move the settings icon below the top left box
+  - add a "?" icon below the settings icon, that will toggle the help info (bottom box)
+[ ] add an option to see a HSL / HSV cylinder instead of RGB cube (see hsl_hsv.png).
+  Add a radio button color model select in top left - between the info box and settings menu.
+  Move the existing buttons down.

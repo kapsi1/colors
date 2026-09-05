@@ -60,8 +60,8 @@ export class Camera {
     this.updateBasis()
   }
 
-  update(dt: number, intent: FrameIntent, k: number): void {
-    const speed = config.baseSpeed * (intent.boost ? config.boost : 1) * k
+  update(dt: number, intent: FrameIntent): void {
+    const speed = config.baseSpeed * (intent.boost ? config.boost : 1)
     let tx = this.fwd[0] * intent.forward + this.right[0] * intent.strafe
     let ty = this.fwd[1] * intent.forward + intent.vertical
     let tz = this.fwd[2] * intent.forward + this.right[2] * intent.strafe

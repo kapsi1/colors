@@ -29,8 +29,8 @@ export interface Config {
   lodValues: number[]
   emaAlpha: number
   lodEvalMs: number
-  lodUpMs: number
-  lodDownMs: number
+  targetFps: number
+  minAutoScale: number
   startPos: [number, number, number]
   startYawDeg: number
   startPitchDeg: number
@@ -68,8 +68,8 @@ export const config: Config = {
   lodValues: [1, 2, 4, 8, 16],
   emaAlpha: 0.1,
   lodEvalMs: 250,
-  lodUpMs: 33,
-  lodDownMs: 12,
+  targetFps: 60,
+  minAutoScale: 0.5,
   startPos: [165.7, 159.9, 165.79],
   startYawDeg: -38.8,
   startPitchDeg: -32.8,

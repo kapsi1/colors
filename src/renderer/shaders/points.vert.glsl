@@ -1,5 +1,6 @@
 #version 300 es
 precision highp float;
+in vec3 aChunkOffset;
 
 uniform mat4 uView;
 uniform mat4 uProj;
@@ -29,7 +30,7 @@ void main() {
   int ix = id & mask;
   int iy = (id >> sh) & mask;
   int iz = id >> (sh + sh);
-  vec3 c = vec3(float(ix), float(iy), float(iz)) * uK + uHalfK;
+  vec3 c = (aChunkOffset + vec3(float(ix), float(iy), float(iz))) * uK + uHalfK;
   vec3 center = (c - uLatticeHalf) * uSpacing;
   vec3 col = clamp(floor(c + 0.5), 0.0, uLatticeMax) / uLatticeMax;
   vec4 vc = uView * vec4(center, 1.0);

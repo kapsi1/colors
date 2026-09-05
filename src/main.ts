@@ -9,6 +9,7 @@ import { createGL, queryMaxPointSize, type FrameState } from './renderer/gl'
 import { SpherePoints } from './renderer/spherePoints'
 import { SphereQuads } from './renderer/sphereQuads'
 import { Axes } from './renderer/axes'
+import { GpuTimer } from './renderer/gpuTimer'
 
 interface Renderer {
   points: SpherePoints
@@ -49,6 +50,7 @@ declare global {
       config: Config
       gl: WebGL2RenderingContext
       renders: number
+      submitted: number
     }
   }
 }
@@ -71,6 +73,8 @@ function main(): void {
     baseSpeed: config.baseSpeed,
     sensitivity: config.sensitivity,
     userRenderScale: config.userRenderScale,
+    targetFps: config.targetFps,
+    minAutoScale: config.minAutoScale,
     bgHex: rgbToHex(config.bg),
     fog: config.fog,
     shading: config.shading,
@@ -110,6 +114,10 @@ function main(): void {
   if (sens !== null) config.sensitivity = sens
   const scale = numParam('scale', 0.5, 1)
   if (scale === 0.5 || scale === 0.75 || scale === 1) config.userRenderScale = scale
+  const fps = numParam('fps', 60, 144)
+  if (fps !== null) config.targetFps = Math.round(fps)
+  const minScale = numParam('minscale', 0.33, 1)
+  if (minScale !== null && [0.33, 0.5, 0.75, 1].includes(minScale)) config.minAutoScale = minScale
   const fog = flagParam('fog')
   if (fog !== null) config.fog = fog
   const shade = flagParam('shade')
@@ -148,10 +156,11 @@ function main(): void {
   const auto = flagParam('auto')
   if (auto === true) lod.setAuto()
 
-  window.__cube = { cam, lod, config, gl, renders: 0 }
+  window.__cube = { cam, lod, config, gl, renders: 0, submitted: 0 }
   const hud = new Hud()
   const minimap = new Minimap()
   const settings = new SettingsPanel({
+    getShareUrl: () => `${location.origin}${location.pathname}${location.search}${serializeState()}`,
     getLod: () => ({ auto: lod.auto, k: lod.k }),
     setLodManual: (k) => lod.setManual(k),
     setLodAuto: () => lod.setAuto(),
@@ -168,6 +177,7 @@ function main(): void {
   if (params.get('panel') === '1') settings.show()
 
   let renderer = createRenderer(gl)
+  let gpuTimer = new GpuTimer(gl)
   let maxPoint = queryMaxPointSize(gl)
   let lost = false
   let raf = 0
@@ -177,6 +187,15 @@ function main(): void {
   let drawnSig: number[] = []
   let renders = 0
   let generation = 0
+  let previousRendered = false
+  let cpuMs = 0
+  let lastSceneChange = 0
+  let cssWidth = canvas.clientWidth
+  let cssHeight = canvas.clientHeight
+  new ResizeObserver(() => {
+    cssWidth = canvas.clientWidth
+    cssHeight = canvas.clientHeight
+  }).observe(canvas)
 
   const projScale = (height: number): number =>
     (0.5 * height) / Math.tan((config.fovDeg * Math.PI) / 360)
@@ -203,6 +222,8 @@ function main(): void {
     if (config.userRenderScale !== initial.userRenderScale) {
       parts.push(`scale=${config.userRenderScale}`)
     }
+    if (config.targetFps !== initial.targetFps) parts.push(`fps=${config.targetFps}`)
+    if (config.minAutoScale !== initial.minAutoScale) parts.push(`minscale=${config.minAutoScale}`)
     if (rgbToHex(config.bg) !== initial.bgHex) parts.push(`bg=${rgbToHex(config.bg)}`)
     if (!config.fog) parts.push('fog=0')
     if (!config.shading) parts.push('shade=0')
@@ -222,6 +243,9 @@ function main(): void {
   })
   canvas.addEventListener('webglcontextrestored', () => {
     renderer = createRenderer(gl)
+    gpuTimer = new GpuTimer(gl)
+    lod.resetTiming()
+    previousRendered = false
     maxPoint = queryMaxPointSize(gl)
     lost = false
     generation++
@@ -232,10 +256,16 @@ function main(): void {
     raf = requestAnimationFrame(frame)
   })
 
+  document.addEventListener('visibilitychange', () => {
+    last = -1
+    previousRendered = false
+    lod.resetTiming()
+  })
+
   function resize(): void {
     const dpr = Math.min(window.devicePixelRatio || 1, config.dprCap)
-    const w = Math.max(1, Math.round(canvas.clientWidth * dpr * config.renderScale))
-    const h = Math.max(1, Math.round(canvas.clientHeight * dpr * config.renderScale))
+    const w = Math.max(1, Math.round(cssWidth * dpr * config.renderScale))
+    const h = Math.max(1, Math.round(cssHeight * dpr * config.renderScale))
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w
       canvas.height = h
@@ -253,24 +283,27 @@ function main(): void {
   }
 
   function frame(now: number): void {
+    const started = performance.now()
     raf = requestAnimationFrame(frame)
     const frameMs = last < 0 ? 16.7 : now - last
     last = now
-    if (lost) return
+    if (lost || document.hidden) return
     const dt = Math.min(frameMs, 100) / 1000
 
     const intent = input.consume()
     cam.addLook(intent.lookDX, intent.lookDY)
 
-    const k = lod.update(now, frameMs, cam.distanceToCube(config.spacing), projScale(canvas.height))
+    const gpuMs = gpuTimer.poll(now)
+    const fullHeight = cssHeight * Math.min(window.devicePixelRatio || 1, config.dprCap) * config.userRenderScale
+    const k = lod.update(now, frameMs, cam.distanceToCube(config.spacing), projScale(fullHeight),
+      previousRendered, gpuMs === undefined ? undefined : gpuMs + cpuMs)
     config.renderScale = lod.auto
       ? lod.effectiveScale(config.userRenderScale)
       : config.userRenderScale
     resize()
-    gl.viewport(0, 0, canvas.width, canvas.height)
 
     const projScaleValue = projScale(canvas.height)
-    cam.update(dt, intent, k)
+    cam.update(dt, intent)
     cam.updateProj(canvas.width / canvas.height)
 
     const sig = [
@@ -287,9 +320,12 @@ function main(): void {
     }
 
     if (dirty) {
+      lastSceneChange = now
       drawnSig = sig
       renders++
+      gpuTimer.begin()
 
+      gl.viewport(0, 0, canvas.width, canvas.height)
       gl.clearColor(config.bg[0], config.bg[1], config.bg[2], 1)
       gl.enable(gl.DEPTH_TEST)
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -310,14 +346,19 @@ function main(): void {
       const quadCount = renderer.quads.build(cam.pos, k, projScaleValue, maxPoint)
       renderer.quads.render(state, quadCount)
       renderer.axes.render(state)
+      gpuTimer.end()
     }
 
     window.__cube!.renders = renders
+    window.__cube!.submitted = renderer.points.submitted
+    previousRendered = dirty
     hud.update(now, lod.emaMs, k, lod.auto, cameraRgb())
     if (hud.visible) minimap.update(cam, canvas.width / canvas.height)
     settings.sync()
 
-    if (now - lastUrlWrite >= 500) {
+    // Updating browser history while dragging can interrupt frame delivery.
+    // Persist once movement settles; Copy link explicitly serializes below.
+    if (now - lastUrlWrite >= 500 && now - lastSceneChange >= 300) {
       lastUrlWrite = now
       const hash = serializeState()
       if (hash !== lastWrittenHash) {
@@ -325,6 +366,7 @@ function main(): void {
         history.replaceState(null, '', hash)
       }
     }
+    cpuMs = performance.now() - started
   }
 
   raf = requestAnimationFrame(frame)

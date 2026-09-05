@@ -20,6 +20,9 @@ export class SphereQuads {
   private buf: WebGLBuffer
   private data: Float32Array
   private gl: WebGL2RenderingContext
+  private buildKey = ''
+  private count = 0
+  private upload = false
 
   constructor(gl: WebGL2RenderingContext) {
     this.gl = gl
@@ -47,9 +50,15 @@ export class SphereQuads {
   }
 
   build(pos: vec3, k: number, projScale: number, maxPoint: number): number {
+    const key = [pos[0], pos[1], pos[2], k, projScale, maxPoint, config.spacing,
+      config.radius, config.maxInstances].join(',')
+    if (key === this.buildKey) return this.count
+    this.buildKey = key
+    this.upload = true
     const spacing = config.spacing
     const n = config.latticeSize / k
-    const maxInstances = this.data.length / STRIDE_FLOATS
+    const maxInstances = Math.min(config.maxInstances, this.data.length / STRIDE_FLOATS)
+    if (maxInstances <= 0) return this.count = 0
     const nearDist = spriteClampDistance(k, projScale, maxPoint)
     const rk = sphereRadius(k)
     const D = (nearDist + rk) / spacing
@@ -90,7 +99,7 @@ export class SphereQuads {
         }
       }
     }
-    return count
+    return this.count = count
   }
 
   render(f: FrameState, count: number): void {
@@ -105,7 +114,10 @@ export class SphereQuads {
     gl.uniform1f(u.loc('uAspect'), f.aspect)
     setShadingUniforms(gl, u, f)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buf)
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data, 0, count * STRIDE_FLOATS)
+    if (this.upload) {
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data, 0, count * STRIDE_FLOATS)
+      this.upload = false
+    }
     gl.depthFunc(gl.LEQUAL)
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count)
     gl.depthFunc(gl.LESS)
