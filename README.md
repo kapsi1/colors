@@ -12,6 +12,21 @@ Spheres are ray-traced per pixel in custom GLSL shaders, distant geometry is
 drawn as GPU-instanced point sprites, and an adaptive LOD controller keeps the
 frame rate on target automatically.
 
+## Color models
+
+Use the **RGB / HSL / HSV** radio buttons beside the speedometer in the top-left
+box. RGB is the default cube. HSL and HSV use a cylinder: hue runs around the
+vertical axis (red at +X, yellow toward +Z), saturation increases from the gray
+axis to the rim, and lightness/value increases upward. HSL has a white top and
+black bottom; HSV has a colored top and black bottom.
+
+The cylinder samples colors on a uniformly spaced Cartesian lattice clipped to
+a circular cross-section; it does not contain one sphere per unique RGB color.
+The outline and minimap follow the selected shape, and the HUD reports the
+RGB/hex equivalent at the camera position (or ?outside cylinder?).
+Links preserve the selection with `model=hsl` or `model=hsv` in the URL hash.
+Switching models keeps your camera pose, spacing, and quality settings.
+
 ## Features
 
 - **Full 24-bit RGB lattice** — all 256³ spheres at once, frustum-culled on the
@@ -88,12 +103,16 @@ transpiles the relevant TypeScript modules on the fly and covers camera
 orientation and screen-axis movement, the outer boundary, LOD, frustum
 culling, GPU timer query handling, and the HUD color readout.
 
-For the WebGL pixel regression tests, install Chromium once and run:
+For the WebGL pixel and color-model interaction regression tests, install Chromium once and run:
 
 ```sh
 pnpm exec playwright install chromium
 pnpm test:render
 ```
+
+Playwright reuses the dev server at localhost:5173, or starts one if needed.
+Color-model tests cover GPU/CPU color agreement, cylinder clipping, HUD controls,
+minimap updates, link round trips, and switching back to RGB.
 
 These JavaScript tests compile the actual sphere shaders and compare pixels
 and debug normals with independent ray intersections across the reported

@@ -23,6 +23,8 @@ export function visibleChunks(f: FrameState, out: Float32Array): number {
       const wy = origin + y / size * step
       for (let x = 0; x < f.n; x += size) {
         const wx = origin + x / size * step
+        if (config.colorModel !== 'rgb' && Math.hypot(Math.max(0, Math.abs(wx) - halfSpan),
+          Math.max(0, Math.abs(wz) - halfSpan)) > config.latticeHalf * f.spacing) continue
         const depth = -(v[2] * wx + v[6] * wy + v[10] * wz + v[14])
         if (depth + radius < config.near || depth - radius > config.far) continue
         const vx = v[0] * wx + v[4] * wy + v[8] * wz + v[12]

@@ -1,3 +1,4 @@
+import { config } from './config'
 import { Speedometer } from './speedometer'
 
 export class Hud {
@@ -58,7 +59,7 @@ export class Hud {
       this.lastFpsText = fpsText
       this.fpsLine.textContent = fpsText
     }
-    const camText = rgb ? `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})` : 'outside cube'
+    const camText = rgb ? `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})` : config.colorModel === 'rgb' ? 'outside cube' : 'outside cylinder'
     if (camText !== this.lastCamText) {
       this.lastCamText = camText
       this.camRgb.textContent = camText

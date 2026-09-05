@@ -103,7 +103,8 @@ test('culling rejects an entire cube behind the camera and reduces interior subm
   assert.ok(count > 0 && count < 4096 / 3)
 })
 
-test('visible sphere centers are never removed across poses, FOVs, strides and aspect ratios', () => {
+for (const model of ['rgb', 'hsl', 'hsv']) test(model + ' visible sphere centers survive culling across FOVs, strides and aspect ratios', () => {
+  config.colorModel = model
   const offsets = new Float32Array(4096 * 3)
   for (const k of config.lodValues) for (const aspect of [0.5, 1, 2]) for (const fov of [40, 100]) {
     const view = mat4.create()
@@ -117,6 +118,7 @@ test('visible sphere centers are never removed across poses, FOVs, strides and a
       const wx = x * k + (k - 1) / 2 - config.latticeHalf
       const wy = y * k + (k - 1) / 2 - config.latticeHalf
       const wz = z * k + (k - 1) / 2 - config.latticeHalf
+      if (model !== 'rgb' && wx * wx + wz * wz > config.latticeHalf ** 2) continue
       const depth = -(view[2] * wx + view[6] * wy + view[10] * wz + view[14])
       const vx = view[0] * wx + view[4] * wy + view[8] * wz + view[12]
       const vy = view[1] * wx + view[5] * wy + view[9] * wz + view[13]

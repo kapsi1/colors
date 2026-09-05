@@ -9,7 +9,7 @@ acting as a minimap. Also show camera's cone of vision.
     - add a speedometer similar to one in a car
   - in minimap reduce the margin around the cube, and remove the text below
   - add a "?" icon below the settings icon, that will toggle the hint box
-[ ] add an option to see a HSL / HSV cylinder instead of RGB cube (see hsl_hsv.png).
+[x] add an option to see a HSL / HSV cylinder instead of RGB cube (see hsl_hsv.png).
   Add a color model select control in top left box - move speedometer to the left, and add a radio-button type control to the right of the
   speedometer. Style the control so it matches look and feel of the existing UI.
   The minimap should also be updated.

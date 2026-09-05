@@ -12,6 +12,18 @@ function outlineHalfExtent(spacing: number): number {
 
 export function buildOutlineEdges(spacing: number): Float32Array {
   const b = outlineHalfExtent(spacing)
+  if (config.colorModel !== 'rgb') {
+    const edges: number[] = []
+    const segments = 96
+    for (let i = 0; i < segments; i++) {
+      const a = i * 2 * Math.PI / segments, c = (i + 1) * 2 * Math.PI / segments
+      for (const y of [-b, b]) edges.push(b * Math.cos(a), y, b * Math.sin(a),
+        b * Math.cos(c), y, b * Math.sin(c))
+      if (i % (segments / 4) === 0) edges.push(b * Math.cos(a), -b, b * Math.sin(a),
+        b * Math.cos(a), b, b * Math.sin(a))
+    }
+    return new Float32Array(edges)
+  }
   const edges = new Float32Array(EDGE_COUNT * 6)
   let e = 0
   for (let axis = 0; axis < 3; axis++) {

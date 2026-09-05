@@ -1,4 +1,7 @@
+import type { ColorModel } from './colorModel'
+
 export interface Config {
+  colorModel: ColorModel
   latticeSize: number
   latticeHalf: number
   spacing: number
@@ -36,6 +39,7 @@ export interface Config {
 }
 
 export const config: Config = {
+  colorModel: 'rgb',
   latticeSize: 256,
   latticeHalf: 127.5,
   spacing: 1.0,

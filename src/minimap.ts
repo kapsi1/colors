@@ -1,6 +1,7 @@
 import { vec3 } from 'gl-matrix'
 import type { Camera } from './camera'
 import { config } from './config'
+import { modelColor } from './colorModel'
 
 type Point = [number, number, number]
 type Face = { points: Point[]; color: string }
@@ -19,7 +20,31 @@ export class Minimap {
   private background = document.createElement('canvas')
   private backgroundKey = ''
 
-  constructor() {
+  private builtModel = ''
+  private buildFaces(): void {
+    this.faces = []
+    this.builtModel = config.colorModel
+    this.canvas.setAttribute('aria-label', config.colorModel.toUpperCase() + (config.colorModel === 'rgb' ? ' cube' : ' cylinder') + ' minimap showing camera position and viewing cone')
+    if (config.colorModel !== 'rgb') {
+      const steps = 48, layers = 12
+      const point = (angle: number, y: number, radius = 1): Point => [radius * Math.cos(angle), y, radius * Math.sin(angle)]
+      const add = (points: Point[]): void => {
+        const p = [0, 1, 2].map(a => points.reduce((sum, v) => sum + v[a], 0) / points.length)
+        const rgb = modelColor(p[0], p[1], p[2], config.colorModel).map(v => Math.round(v * 255))
+        this.faces.push({ points, color: 'rgba(' + rgb.join(',') + ',0.25)' })
+      }
+      for (let i = 0; i < steps; i++) {
+        const a = i * Math.PI * 2 / steps, b = (i + 1) * Math.PI * 2 / steps
+        for (let j = 0; j < layers; j++) {
+          const y = 2 * j / layers - 1, z = 2 * (j + 1) / layers - 1
+          add([point(a, y), point(b, y), point(b, z), point(a, z)])
+          for (const cap of [-1, 1]) add([point(a, cap, j / layers), point(b, cap, j / layers),
+            point(b, cap, (j + 1) / layers), point(a, cap, (j + 1) / layers)])
+        }
+      }
+      this.sortFaces()
+      return
+    }
     // Small tiles interpolate the actual RGB coordinates over all six faces.
     const steps = 10
     for (let axis = 0; axis < 3; axis++) {
@@ -39,16 +64,21 @@ export class Minimap {
         }
       }
     }
+    this.sortFaces()
+  }
+
+  private sortFaces(): void {
     this.faces.sort((a, b) =>
       a.points.reduce((sum, p) => sum + dot(p, DEPTH), 0) -
       b.points.reduce((sum, p) => sum + dot(p, DEPTH), 0))
   }
 
   update(cam: Camera, aspect: number): void {
+    if (this.builtModel !== config.colorModel) this.buildFaces()
     const size = this.canvas.clientWidth
     const dpr = Math.min(window.devicePixelRatio || 1, config.dprCap)
     if (!size) return
-    const signature = [size, dpr, ...cam.pos, cam.orientationVersion, aspect, config.spacing, config.fovDeg, config.far].join(',')
+    const signature = [size, dpr, ...cam.pos, cam.orientationVersion, aspect, config.spacing, config.fovDeg, config.far, config.colorModel].join(',')
     if (signature === this.signature) return
     this.signature = signature
     const pixels = Math.round(size * dpr)
@@ -83,7 +113,7 @@ export class Minimap {
       if (close) ctx.closePath()
     }
 
-    const backgroundKey = [pixels, dpr, scale].join(',')
+    const backgroundKey = [pixels, dpr, scale, config.colorModel].join(',')
     if (backgroundKey !== this.backgroundKey) {
       this.backgroundKey = backgroundKey
       for (const face of this.faces) {
@@ -92,7 +122,19 @@ export class Minimap {
         ctx.fill()
       }
       ctx.lineWidth = 1
-      for (const p of vertices) {
+      if (config.colorModel !== 'rgb') {
+        ctx.strokeStyle = 'rgba(35,45,60,0.55)'
+        for (const y of [-1, 1]) {
+          path(Array.from({ length: 96 }, (_, i) => [Math.cos(i * Math.PI / 48), y, Math.sin(i * Math.PI / 48)] as Point))
+          ctx.stroke()
+        }
+        for (let i = 0; i < 4; i++) {
+          const a = i * Math.PI / 2
+          path([[Math.cos(a), -1, Math.sin(a)], [Math.cos(a), 1, Math.sin(a)]], false)
+          ctx.stroke()
+        }
+      }
+      for (const p of config.colorModel === 'rgb' ? vertices : []) {
         for (let axis = 0; axis < 3; axis++) {
           if (p[axis] !== -1) continue
           const end = [...p] as Point
@@ -132,9 +174,16 @@ export class Minimap {
     ctx.lineWidth = 1
     ctx.lineCap = 'round'
     ctx.setLineDash([1, 3])
-    for (let axis = 0; axis < 3; axis++) {
+    for (let axis = 0; axis < (config.colorModel === 'rgb' ? 3 : 2); axis++) {
       const foot = pos.map(v => Math.max(-1, Math.min(1, v))) as Point
       foot[axis] = 1
+      if (config.colorModel !== 'rgb') {
+        const r = Math.hypot(pos[0], pos[2])
+        const divisor = axis === 0 ? r || 1 : Math.max(1, r)
+        foot[0] = r === 0 && axis === 0 ? 1 : pos[0] / divisor
+        foot[2] = pos[2] / divisor
+        foot[1] = axis === 0 ? Math.max(-1, Math.min(1, pos[1])) : 1
+      }
       path([pos, foot], false)
       ctx.stroke()
       const [x, y] = project(foot)
@@ -151,6 +200,9 @@ export class Minimap {
       [[-1, 1.22, -1], 'G', '#18763c'],
       [[-1, -1, 1.22], 'B', '#315cca'],
     ]
+    if (config.colorModel !== 'rgb') labels.splice(0, labels.length,
+      [[1.25, -1, 0], 'H', '#b62b35'], [[0.55, -1, 0], 'S', '#315cca'],
+      [[0, 1.25, 0], config.colorModel === 'hsl' ? 'L' : 'V', '#18763c'])
     for (const [p, label, color] of labels) {
       ctx.fillStyle = color
       const [x, y] = project(p)

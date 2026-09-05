@@ -2,6 +2,7 @@
 precision highp float;
 in vec3 aChunkOffset;
 
+uniform int uColorModel;
 uniform mat4 uView;
 uniform mat4 uProj;
 uniform float uK;
@@ -33,6 +34,20 @@ void main() {
   vec3 c = (aChunkOffset + vec3(float(ix), float(iy), float(iz))) * uK + uHalfK;
   vec3 center = (c - uLatticeHalf) * uSpacing;
   vec3 col = clamp(floor(c + 0.5), 0.0, uLatticeMax) / uLatticeMax;
+  if (uColorModel != 0) {
+    vec3 p = (c - uLatticeHalf) / uLatticeHalf;
+    float s = length(p.xz);
+    if (s > 1.0) {
+      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+      gl_PointSize = 1.0;
+      return;
+    }
+    float h = (s == 0.0 ? 0.0 : atan(p.z, p.x)) / 6.28318530718;
+    float t = (p.y + 1.0) * 0.5;
+    float chroma = uColorModel == 1 ? (1.0 - abs(2.0 * t - 1.0)) * s : t * s;
+    float m = uColorModel == 1 ? t - chroma * 0.5 : t - chroma;
+    col = m + chroma * clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+  }
   vec4 vc = uView * vec4(center, 1.0);
   float viewZ = max(-vc.z, 1e-6);
   float t = length(vc.xy) / viewZ;

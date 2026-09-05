@@ -101,6 +101,9 @@ export class Camera {
 
   distanceToCube(spacing: number): number {
     const half = config.latticeHalf * spacing
+    if (config.colorModel !== 'rgb') return Math.hypot(
+      Math.max(Math.hypot(this.pos[0], this.pos[2]) - half, 0),
+      Math.max(Math.abs(this.pos[1]) - half, 0))
     const dx = Math.max(Math.abs(this.pos[0]) - half, 0)
     const dy = Math.max(Math.abs(this.pos[1]) - half, 0)
     const dz = Math.max(Math.abs(this.pos[2]) - half, 0)

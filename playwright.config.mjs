@@ -4,6 +4,11 @@ export default defineConfig({
   testDir: './tests',
   testMatch: '**/*.spec.mjs',
   workers: 1,
+  webServer: {
+    command: 'pnpm dev --host localhost --port 5173 --strictPort',
+    url: 'http://localhost:5173',
+    reuseExistingServer: true,
+  },
   use: {
     headless: true,
     launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },

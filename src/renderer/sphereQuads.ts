@@ -1,3 +1,4 @@
+import { modelColor, insideModel } from '../colorModel'
 import { config } from '../config'
 import type { vec3 } from 'gl-matrix'
 import {
@@ -51,7 +52,7 @@ export class SphereQuads {
 
   build(pos: vec3, k: number, projScale: number, maxPoint: number): number {
     const key = [pos[0], pos[1], pos[2], k, projScale, maxPoint, config.spacing,
-      config.radius, config.maxInstances].join(',')
+      config.radius, config.maxInstances, config.colorModel].join(',')
     if (key === this.buildKey) return this.count
     this.buildKey = key
     this.upload = true
@@ -86,6 +87,8 @@ export class SphereQuads {
           const cx = ix * k + off
           const dx = cx - camL[0]
           if (dx * dx + dy * dy + dz * dz > D2) continue
+          const px = (cx - half) / half, py = (cy - half) / half, pz = (cz - half) / half
+          if (!insideModel(px, py, pz)) continue
           const o = count * STRIDE_FLOATS
           data[o] = (cx - half) * spacing
           data[o + 1] = (cy - half) * spacing
@@ -93,6 +96,12 @@ export class SphereQuads {
           data[o + 3] = latticeColor(cx)
           data[o + 4] = latticeColor(cy)
           data[o + 5] = latticeColor(cz)
+          if (config.colorModel !== 'rgb') {
+            const color = modelColor(px, py, pz, config.colorModel)
+            data[o + 3] = color[0]
+            data[o + 4] = color[1]
+            data[o + 5] = color[2]
+          }
           data[o + 6] = rk
           count++
           if (count >= maxInstances) break outer

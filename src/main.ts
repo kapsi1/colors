@@ -1,4 +1,5 @@
 import { config, type Config } from './config'
+import { cameraColor, colorModelIndex } from './colorModel'
 import { Camera } from './camera'
 import { initInput } from './input'
 import { LodController } from './lod'
@@ -125,6 +126,8 @@ function main(): void {
   const axes = flagParam('axes')
   if (axes !== null) config.axes = axes
   if (params.get('debug') === '1') config.debugView = true
+  const model = params.get('model')
+  if (model === 'rgb' || model === 'hsl' || model === 'hsv') config.colorModel = model
   const bgHex = params.get('bg')
   if (bgHex !== null && /^#[0-9a-fA-F]{6}$/.test(bgHex)) config.bg = hexToRgb(bgHex)
 
@@ -157,6 +160,14 @@ function main(): void {
   if (auto === true) lod.setAuto()
 
   window.__cube = { cam, lod, config, gl, renders: 0, submitted: 0 }
+  const modelControl = document.getElementById('color-model')!
+  const radios = modelControl.querySelectorAll<HTMLInputElement>('input')
+  for (const radio of radios) {
+    radio.checked = radio.value === config.colorModel
+    radio.addEventListener('change', () => {
+      if (radio.checked && (radio.value === 'rgb' || radio.value === 'hsl' || radio.value === 'hsv')) config.colorModel = radio.value
+    })
+  }
   const hud = new Hud()
   const minimap = new Minimap()
   const settings = new SettingsPanel({
@@ -230,6 +241,7 @@ function main(): void {
     if (config.targetFps !== initial.targetFps) parts.push(`fps=${config.targetFps}`)
     if (config.minAutoScale !== initial.minAutoScale) parts.push(`minscale=${config.minAutoScale}`)
     if (rgbToHex(config.bg) !== initial.bgHex) parts.push(`bg=${rgbToHex(config.bg)}`)
+    if (config.colorModel !== 'rgb') parts.push('model=' + config.colorModel)
     if (!config.fog) parts.push('fog=0')
     if (!config.shading) parts.push('shade=0')
     if (!config.axes) parts.push('axes=0')
@@ -277,16 +289,6 @@ function main(): void {
     }
   }
 
-  function cameraRgb(): [number, number, number] | null {
-    const out: [number, number, number] = [0, 0, 0]
-    for (let a = 0; a < 3; a++) {
-      const g = Math.round(cam.pos[a] / config.spacing + config.latticeHalf)
-      if (g < 0 || g > config.latticeSize - 1) return null
-      out[a] = g
-    }
-    return out
-  }
-
   function frame(now: number): void {
     const started = performance.now()
     raf = requestAnimationFrame(frame)
@@ -317,7 +319,7 @@ function main(): void {
       config.fovDeg, config.spacing, config.radius, config.far,
       config.fog ? 1 : 0, config.shading ? 1 : 0, config.axes ? 1 : 0,
       config.debugView ? 1 : 0, config.bg[0], config.bg[1], config.bg[2],
-      config.renderScale, config.maxInstances,
+      config.renderScale, config.maxInstances, colorModelIndex(),
     ]
     let dirty = sig.length !== drawnSig.length
     for (let i = 0; !dirty && i < sig.length; i++) {
@@ -357,7 +359,7 @@ function main(): void {
     window.__cube!.renders = renders
     window.__cube!.submitted = renderer.points.submitted
     previousRendered = dirty
-    hud.update(now, lod.emaMs, config.baseSpeed, cameraRgb())
+    hud.update(now, lod.emaMs, config.baseSpeed, cameraColor(cam.pos))
     if (hud.visible) minimap.update(cam, canvas.width / canvas.height)
     settings.sync()
 

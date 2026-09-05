@@ -1,3 +1,4 @@
+import { colorModelIndex } from '../colorModel'
 import { config } from '../config'
 import { blockOffset, sphereRadius } from './lattice'
 import { createProgram, setShadingUniforms, Uniforms, type FrameState } from './gl'
@@ -42,6 +43,7 @@ export class SpherePoints {
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.offsets, 0, count * 3)
     gl.uniformMatrix4fv(u.loc('uView'), false, f.view)
     gl.uniformMatrix4fv(u.loc('uProj'), false, f.proj)
+    gl.uniform1i(u.loc('uColorModel'), colorModelIndex())
     gl.uniform1f(u.loc('uK'), f.k)
     gl.uniform1f(u.loc('uHalfK'), blockOffset(f.k))
     gl.uniform1f(u.loc('uLatticeHalf'), config.latticeHalf)

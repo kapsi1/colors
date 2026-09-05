@@ -21,6 +21,7 @@ export class Outline {
   private edges = buildOutlineEdges(config.spacing)
   private builtSpacing = config.spacing
   private builtRadius = config.radius
+  private builtModel = config.colorModel
 
   constructor(private gl: WebGL2RenderingContext) {
     this.prog = createProgram(gl, vertSrc, fragSrc)
@@ -43,11 +44,14 @@ export class Outline {
 
   render(f: FrameState): void {
     if (!config.axes) return
-    if (config.spacing !== this.builtSpacing || config.radius !== this.builtRadius) {
+    if (config.spacing !== this.builtSpacing || config.radius !== this.builtRadius || config.colorModel !== this.builtModel) {
       this.edges = buildOutlineEdges(config.spacing)
       this.builtSpacing = config.spacing
       this.builtRadius = config.radius
+      this.builtModel = config.colorModel
     }
+    const required = this.edges.length / 6 * VERTS_PER_EDGE * FLOATS_PER_VERT
+    if (this.verts.length !== required) this.verts = new Float32Array(required)
     const gl = this.gl
     const canvas = gl.canvas as HTMLCanvasElement
     gl.useProgram(this.prog)

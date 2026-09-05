@@ -51,6 +51,12 @@
       color: #222;
     }
 
+    #model-row { display: flex; align-items: center; gap: 10px; }
+    #color-model { pointer-events: auto; border: 0; padding: 0; margin: 0; }
+    #color-model legend { font-size: 10px; color: #666; }
+    #color-model label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    #color-model input { accent-color: #4b596b; margin: 0; }
+    #color-model label:has(input:checked) { font-weight: bold; }
     #speedo {
       display: block;
       width: 150px;
@@ -243,7 +249,14 @@
           <div id="cam-hex"></div>
         </div>
       </div>
-      <canvas id="speedo" role="img" aria-label="Maximum move speed dial, controlled with the mouse wheel"></canvas>
+      <div id="model-row">
+        <canvas id="speedo" role="img" aria-label="Maximum move speed dial, controlled with the mouse wheel"></canvas>
+        <fieldset id="color-model"><legend>Color model</legend>
+          <label><input type="radio" name="color-model" value="rgb" checked>RGB</label>
+          <label><input type="radio" name="color-model" value="hsl">HSL</label>
+          <label><input type="radio" name="color-model" value="hsv">HSV</label>
+        </fieldset>
+      </div>
     </div>
     <div id="hint">
       <div>WASD move · Space/Ctrl up/down (C = down) · Shift ×4 speed · Mouse wheel speed · F fullscreen · Tab settings · H hide UI</div>

@@ -49,3 +49,16 @@ measurements are indicative, not hardware performance guarantees. A fixed-qualit
 comparison of the scene's central 750 × 500 pixels was identical. Browser checks
 also covered mouse look, settings/link round trips, idle rendering and context
 restoration.
+
+
+HSL/HSV cylinders reuse the cube's Cartesian lattice and existing LOD strides.
+Entire chunks outside the circular cross-section are rejected on the CPU;
+the point vertex shader clips remaining outside centers and computes HSL/HSV
+colors procedurally. Near quads apply the same membership and color mapping.
+No full color/position buffer is allocated for a cylinder. Mode changes
+invalidate the scene, near-quad cache, outline, and cached minimap background.
+The cylinder outline uses 96 segments per cap and four vertical edges.
+Distance-based LOD uses distance to the cylinder surface. Model changes add
+no draw passes, but hue conversion adds shader arithmetic; no new FPS
+improvement is claimed. JS unit and browser tests verify color conversion,
+bounds, CPU/GPU agreement, switching and URL restoration.
