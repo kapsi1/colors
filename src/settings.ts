@@ -37,7 +37,6 @@ export class SettingsPanel {
   private inp: Record<string, HTMLInputElement> = {}
   private sel: Record<string, HTMLSelectElement> = {}
   private val: Record<string, HTMLElement> = {}
-  private copyBtn!: HTMLButtonElement
   private lastSync = ''
 
   constructor(lodHooks: SettingsLodHooks) {
@@ -126,7 +125,6 @@ export class SettingsPanel {
     this.inp.shade = q<HTMLInputElement>('set-shade')
     this.inp.axes = q<HTMLInputElement>('set-axes')
     this.inp.debug = q<HTMLInputElement>('set-debug')
-    this.copyBtn = q<HTMLButtonElement>('set-copy')
     for (const id of ['spacing', 'radius', 'far', 'speed', 'sens', 'fov', 'scale', 'bg', 'fps']) {
       this.val[id] = q<HTMLElement>(`v-${id}`)
     }

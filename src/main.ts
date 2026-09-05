@@ -352,7 +352,7 @@ function main(): void {
     window.__cube!.renders = renders
     window.__cube!.submitted = renderer.points.submitted
     previousRendered = dirty
-    hud.update(now, lod.emaMs, k, lod.auto, cameraRgb())
+    hud.update(now, lod.emaMs, config.baseSpeed, cameraRgb())
     if (hud.visible) minimap.update(cam, canvas.width / canvas.height)
     settings.sync()
 

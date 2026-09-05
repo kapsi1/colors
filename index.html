@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="data:," />
-  <title>RGB Color Cube Fly-Through</title>
+  <title>16,777,216 colors</title>
   <style>
     html,
     body {
@@ -51,6 +51,13 @@
       color: #222;
     }
 
+    #speedo {
+      display: block;
+      width: 150px;
+      height: 96px;
+      margin-top: 4px;
+    }
+
     #cam-swatch {
       display: inline-block;
       width: 11px;
@@ -64,15 +71,12 @@
     #minimap-wrap {
       position: fixed;
       right: 10px;
-      bottom: 60px;
+      bottom: 10px;
       width: clamp(140px, 20vw, 210px);
       border: 1px solid rgba(0, 0, 0, 0.15);
       border-radius: 8px;
       background: rgba(255, 255, 255, 0.55);
-      color: #444;
-      text-align: center;
-      font: 11px/1.5 ui-monospace, Consolas, monospace;
-      padding-bottom: 7px;
+      overflow: hidden;
     }
 
     #minimap {
@@ -96,7 +100,8 @@
       color: black;
     }
 
-    #gear {
+    #gear,
+    #help {
       position: fixed;
       top: 10px;
       right: 10px;
@@ -106,19 +111,23 @@
       border-radius: 8px;
       border: 1px solid rgba(0, 0, 0, 0.22);
       background: rgba(255, 255, 255, 0.92);
-      font-size: 17px;
-      line-height: 1;
+      font: 16px/1 system-ui, sans-serif;
       color: #333;
       cursor: pointer;
     }
 
-    #gear:hover {
+    #help {
+      top: 52px;
+    }
+
+    #gear:hover,
+    #help:hover {
       background: #fff;
     }
 
     #panel {
       position: fixed;
-      top: 52px;
+      top: 47px;
       right: 10px;
       z-index: 10;
       width: 268px;
@@ -127,7 +136,7 @@
       border: 1px solid rgba(0, 0, 0, 0.22);
       border-radius: 8px;
       padding: 10px 12px;
-      max-height: calc(100vh - 72px);
+      max-height: calc(100vh - 114px);
       overflow: auto;
       font: 12px/1.4 system-ui, sans-serif;
       color: #222;
@@ -210,12 +219,11 @@
   <div id="hud">
     <div id="minimap-wrap">
       <canvas id="minimap" role="img" aria-label="RGB cube minimap showing camera position and viewing cone"></canvas>
-      camera &middot; viewing cone
     </div>
     <div id="fps">
-      <div id="fps-line">-- fps · -- ms</div>
-      <div id="fps-count">--</div>
-      <div id="fps-cam">camera <span id="cam-rgb">--</span> <span id="cam-swatch"></span></div>
+      <div id="fps-line">-- fps</div>
+      <div id="fps-cam"><span id="cam-rgb">--</span> <span id="cam-swatch"></span></div>
+      <canvas id="speedo" role="img" aria-label="Maximum move speed dial, controlled with the mouse wheel"></canvas>
     </div>
     <div id="hint">
       <div>WASD move · Space/Ctrl up/down (C = down) · Shift ×4 speed · Mouse wheel speed · F fullscreen · Tab settings · H hud</div>
@@ -223,6 +231,7 @@
     </div>
   </div>
   <button id="gear" aria-label="Toggle settings" aria-expanded="false" title="Settings (Tab)">⚙</button>
+  <button id="help" aria-label="Toggle hint box" aria-expanded="true" title="Hints">?</button>
   <div id="panel" hidden></div>
   <script type="module" src="/src/main.ts"></script>
 </body>

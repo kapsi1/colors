@@ -1,19 +1,29 @@
-import { config } from './config'
+import { Speedometer } from './speedometer'
 
 export class Hud {
   private root: HTMLElement
+  private hint: HTMLElement
+  private help: HTMLButtonElement
   private fpsLine: HTMLElement
-  private fpsCount: HTMLElement
   private camRgb: HTMLElement
   private swatch: HTMLElement
+  private speedo = new Speedometer()
   private lastUpdate = -1e9
+  private lastFpsText = ''
+  private lastCamText = ''
 
   constructor() {
     this.root = document.getElementById('hud')!
+    this.hint = document.getElementById('hint')!
+    this.help = document.getElementById('help') as HTMLButtonElement
     this.fpsLine = document.getElementById('fps-line')!
-    this.fpsCount = document.getElementById('fps-count')!
     this.camRgb = document.getElementById('cam-rgb')!
     this.swatch = document.getElementById('cam-swatch')!
+    this.help.addEventListener('pointerdown', (e) => e.preventDefault())
+    this.help.addEventListener('click', () => this.toggleHints())
+    for (const type of ['pointerdown', 'pointerup', 'pointermove', 'wheel', 'dblclick', 'contextmenu']) {
+      this.help.addEventListener(type, (e) => e.stopPropagation())
+    }
   }
 
   get visible(): boolean {
@@ -24,25 +34,31 @@ export class Hud {
     this.root.hidden = !v
   }
 
+  toggleHints(): void {
+    this.hint.hidden = !this.hint.hidden
+    this.help.setAttribute('aria-expanded', String(!this.hint.hidden))
+  }
+
   update(
     nowMs: number,
     emaMs: number,
-    k: number,
-    auto: boolean,
+    speed: number,
     rgb: [number, number, number] | null,
   ): void {
+    this.speedo.update(nowMs, speed)
     if (nowMs - this.lastUpdate < 250) return
     this.lastUpdate = nowMs
-    const fps = Math.round(1000 / Math.max(emaMs, 1e-6))
-    this.fpsLine.textContent = `${fps} fps · ${emaMs.toFixed(1)} ms`
-    const n = Math.round(config.latticeSize / k)
-    this.fpsCount.textContent = `${(n * n * n).toLocaleString('en-US')} spheres · stride ${k}${auto ? ' (auto)' : ' (manual)'}`
-    if (rgb) {
-      this.camRgb.textContent = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
-      this.swatch.style.background = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`
-    } else {
-      this.camRgb.textContent = 'outside cube'
-      this.swatch.style.background = 'transparent'
+    // The box is sampled at 4 Hz; touch the DOM only when a value moved.
+    const fpsText = `${Math.round(1000 / Math.max(emaMs, 1e-6))} fps`
+    if (fpsText !== this.lastFpsText) {
+      this.lastFpsText = fpsText
+      this.fpsLine.textContent = fpsText
+    }
+    const camText = rgb ? `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})` : 'outside cube'
+    if (camText !== this.lastCamText) {
+      this.lastCamText = camText
+      this.camRgb.textContent = camText
+      this.swatch.style.background = rgb ? `rgb(${rgb[0]},${rgb[1]},${rgb[2]})` : 'transparent'
     }
   }
 }

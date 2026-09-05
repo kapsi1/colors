@@ -51,7 +51,7 @@ export const config: Config = {
   boost: 4,
   wheelFactor: 1.15,
   minSpeed: 0.1,
-  maxSpeed: 200,
+  maxSpeed: 100,
   velTau: 0.08,
   degPerPixel: 0.2,
   sensitivity: 1.0,

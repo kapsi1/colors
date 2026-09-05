@@ -71,7 +71,7 @@ export class Minimap {
     for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) vertices.push([x, y, z])
     const bounds = [...vertices, pos, ...corners]
     const extent = Math.max(2.1, ...bounds.map(p => Math.max(Math.abs(dot(p, RIGHT)), Math.abs(dot(p, UP)))))
-    const scale = (size / 2 - 25) / extent
+    const scale = (size / 2 - 8) / extent
     const project = (p: Point): [number, number] => [size / 2 + dot(p, RIGHT) * scale, size / 2 - dot(p, UP) * scale]
     const path = (points: Point[], close = true): void => {
       ctx.beginPath()
