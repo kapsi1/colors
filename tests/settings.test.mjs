@@ -15,8 +15,9 @@ const makeEl = () => ({
   disabled: false,
   min: '',
   max: '',
+  handlers: {},
   setAttribute() {},
-  addEventListener() {},
+  addEventListener(type, fn) { (this.handlers[type] ??= []).push(fn) },
   blur() {},
 })
 global.document = {
@@ -29,13 +30,16 @@ global.document = {
 
 const { SettingsPanel } = await load('../src/settings.ts')
 
+let resets = 0
 function newPanel() {
   els.clear()
+  resets = 0
   return new SettingsPanel({
     getShareUrl: () => '',
     getLod: () => ({ auto: true, k: 1 }),
     setLodManual() {},
     setLodAuto() {},
+    resetCamera: () => { resets++ },
   })
 }
 
@@ -61,4 +65,14 @@ test('panel stays closed when the chrome returns; show still works afterwards', 
   s.show()
   assert.equal(s.open, true)
   assert.equal(els.get('panel').hidden, false)
+})
+
+test('the reset button hides with the chrome and triggers a camera reset on click', () => {
+  const s = newPanel()
+  s.setChromeVisible(false)
+  assert.equal(els.get('reset').hidden, true, 'reset hidden together with the gear')
+  s.setChromeVisible(true)
+  assert.equal(els.get('reset').hidden, false)
+  for (const fn of els.get('reset').handlers.click) fn({})
+  assert.equal(resets, 1, 'click resets the camera')
 })

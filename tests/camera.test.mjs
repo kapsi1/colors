@@ -251,3 +251,26 @@ test('the basis stays orthonormal after long mixed turning', () => {
   assert.ok(Math.abs(f[0] * u[0] + f[1] * u[1] + f[2] * u[2]) < 1e-6)
   assert.ok(Math.abs(r[0] * u[0] + r[1] * u[1] + r[2] * u[2]) < 1e-6)
 })
+
+test('resetPose returns to the startup pose and drops velocity', () => {
+  const cam = freshCam()
+  const start = [...cam.pos]
+  const startFwd = [...cam.fwd]
+  cam.update(1, { forward: 1, strafe: 0, vertical: 1, boost: true, lookDX: 0, lookDY: 0 })
+  cam.addLook(2.5, -1.2)
+  assert.ok(Math.hypot(...cam.pos.map((v, i) => v - start[i])) > 1, 'camera has moved away')
+  cam.resetPose()
+  closeVec(cam.pos, start, 1e-9, 'position restored')
+  closeVec(cam.fwd, startFwd, 1e-9, 'orientation restored')
+  closeVec(cam.vel, [0, 0, 0], 1e-9, 'velocity cleared')
+})
+
+test('intent magnitude scales the target velocity for the phone stick', () => {
+  const cam = freshCam()
+  cam.setOrientation(Math.PI / 2, 0)
+  for (let i = 0; i < 120; i++) {
+    cam.update(1 / 60, { forward: 1, strafe: 0, vertical: 0, boost: false, lookDX: 0, lookDY: 0, magnitude: 0.4 })
+  }
+  assert.ok(Math.abs(Math.hypot(...cam.vel) - 0.4 * config.baseSpeed) < 0.1,
+    `velocity settles at 40% speed, got ${Math.hypot(...cam.vel)}`)
+})

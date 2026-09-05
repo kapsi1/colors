@@ -180,6 +180,7 @@ function main(): void {
     getLod: () => ({ auto: lod.auto, k: lod.k }),
     setLodManual: (k) => lod.setManual(k),
     setLodAuto: () => lod.setAuto(),
+    resetCamera: () => cam.resetPose(),
   })
   const input = initInput(canvas, {
     togglePanel: () => {

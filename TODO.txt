@@ -25,3 +25,6 @@ acting as a minimap. Also show camera's cone of vision.
   - Hide the speedometer, display speed at the top of the speed slider
   - Make the info box wider and less tall. Move the color model control to the right of the current color display.
   - Don't show the help info or the button to toggle it
+[x] Add a camera reset button under the settings button, to reset camera position to initial.
+[x] Replace hold-to-move on phone with a floating joystick (left half of the screen) for
+  forward/back/strafe at analog speed; other touches keep steering the view.

@@ -104,13 +104,18 @@ via a `matchMedia` change listener. The decision lives in
 `config.phoneMode` and is mirrored onto a `body.phone` class; all layout
 switching is CSS on that class. In phone mode:
 
-- A touch held on the canvas drives the camera forward while the same drag
-  still steers the view (`input.ts` counts active touch pointers).
+- A touch on the left half of the canvas spawns a floating joystick
+  (`joystick.ts`): the knob's deflection drives analog forward/backward/strafe
+  movement via the new `magnitude` rate scale on `FrameIntent`, while touches
+  elsewhere (and the mouse) still steer the view.
 - The speedometer dial is replaced by a vertical `SpeedSlider` on the left
   screen edge with the speed shown above the track; the slider maps track
   position to speed on the same logarithmic scale as the settings panel.
 - The hint box and its `?` toggle are removed, and the info box stretches
   across the width with the color model radios beside the color display.
+
+The settings gear row also hosts a reset button that restores the camera to
+the startup pose (`Camera.resetPose`) and hides together with the HUD chrome.
 
 ## File structure
 
@@ -138,6 +143,8 @@ switching is CSS on that class. In phone mode:
 │   │                           #   Tab/Esc/F/H/digit shortcuts
 │   ├── phone.ts                # Phone-mode detection: phone=1/0 override or
 │   │                           #   pointer/hover/width media query, body class
+│   ├── joystick.ts             # Phone-mode floating thumbstick: spawns under
+│   │                           #   the touch, analog deflection, dead zone
 │   ├── speedSlider.ts          # Phone-mode vertical speed slider on the left
 │   │                           #   edge, logarithmic mapping, speed readout
 │   ├── lod.ts                  # Automatic LOD controller: EMA frame timing,
@@ -183,7 +190,8 @@ switching is CSS on that class. In phone mode:
     ├── outline.test.mjs        # node:test: outline edges, near-plane clipping
     ├── outline.spec.mjs        # Playwright: outline ribbon width and color
     ├── colorModel.spec.mjs     # Playwright: model switching, minimap, hash links
-    ├── phone.spec.mjs          # Playwright: phone layout, slider drag, touch
-    │                           #   forward, auto detection and phone=0 opt-out
+    ├── reset.spec.mjs          # Playwright: camera reset button and chrome visibility
+    ├── phone.spec.mjs          # Playwright: phone layout, slider drag, joystick
+    │                           #   movement, auto detection and phone=0 opt-out
     └── sphereQuads.spec.mjs    # Playwright: shader pixels vs. analytic rays
 ```

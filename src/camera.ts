@@ -38,6 +38,16 @@ export class Camera {
     this.updateView()
   }
 
+  // Return to the startup pose and drop any residual velocity.
+  resetPose(): void {
+    vec3.set(this.pos, config.startPos[0], config.startPos[1], config.startPos[2])
+    vec3.set(this.vel, 0, 0, 0)
+    this.setOrientation(
+      (config.startYawDeg * Math.PI) / 180,
+      (config.startPitchDeg * Math.PI) / 180,
+    )
+  }
+
   faceTowards(x: number, y: number, z: number): void {
     const dx = x - this.pos[0]
     const dy = y - this.pos[1]
@@ -67,7 +77,7 @@ export class Camera {
   }
 
   update(dt: number, intent: FrameIntent): void {
-    const speed = config.baseSpeed * (intent.boost ? config.boost : 1)
+    const speed = config.baseSpeed * (intent.boost ? config.boost : 1) * (intent.magnitude ?? 1)
     let tx = this.fwd[0] * intent.forward + this.right[0] * intent.strafe + this.up[0] * intent.vertical
     let ty = this.fwd[1] * intent.forward + this.right[1] * intent.strafe + this.up[1] * intent.vertical
     let tz = this.fwd[2] * intent.forward + this.right[2] * intent.strafe + this.up[2] * intent.vertical

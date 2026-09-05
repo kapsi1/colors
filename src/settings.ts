@@ -5,6 +5,7 @@ export interface SettingsLodHooks {
   getLod(): { auto: boolean; k: number }
   setLodManual(k: number): void
   setLodAuto(): void
+  resetCamera(): void
 }
 
 const SPEED_MIN = config.minSpeed
@@ -33,6 +34,7 @@ export class SettingsPanel {
   open = false
   private panel: HTMLElement
   private gear: HTMLButtonElement
+  private reset: HTMLButtonElement
   private lodHooks: SettingsLodHooks
   private inp: Record<string, HTMLInputElement> = {}
   private sel: Record<string, HTMLSelectElement> = {}
@@ -43,10 +45,13 @@ export class SettingsPanel {
     this.lodHooks = lodHooks
     this.panel = document.getElementById('panel')!
     this.gear = document.getElementById('gear') as HTMLButtonElement
+    this.reset = document.getElementById('reset') as HTMLButtonElement
     this.build()
     this.gear.addEventListener('pointerdown', (e) => e.preventDefault())
     this.gear.addEventListener('click', () => this.toggle())
-    for (const target of [this.panel, this.gear]) {
+    this.reset.addEventListener('pointerdown', (e) => e.preventDefault())
+    this.reset.addEventListener('click', () => this.lodHooks.resetCamera())
+    for (const target of [this.panel, this.gear, this.reset]) {
       for (const type of ['pointerdown', 'pointerup', 'pointermove', 'wheel', 'dblclick', 'contextmenu']) {
         target.addEventListener(type, (e) => e.stopPropagation())
       }
@@ -76,6 +81,7 @@ export class SettingsPanel {
 
   setChromeVisible(v: boolean): void {
     this.gear.hidden = !v
+    this.reset.hidden = !v
     if (!v) this.close()
   }
 

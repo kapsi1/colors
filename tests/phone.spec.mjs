@@ -37,24 +37,30 @@ test('phone mode shows the slider, hides desktop chrome, and persists', async ({
   expect(errors).toEqual([])
 })
 
-test('a touch held on the canvas moves the camera forward', async ({ page }) => {
+test('a left-half touch spawns the joystick and drives the camera', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('http://localhost:5173/#phone=1&k=16')
   await page.waitForFunction(() => window.__cube?.renders > 0)
-  const distance = await page.evaluate(async () => {
+  await expect(page.locator('#joystick')).toBeHidden()
+  const moved = await page.evaluate(async () => {
     const canvas = document.getElementById('view')
     const before = [...window.__cube.cam.pos]
     canvas.dispatchEvent(new PointerEvent('pointerdown', {
-      pointerType: 'touch', pointerId: 1, button: 0, clientX: 200, clientY: 400, bubbles: true,
+      pointerType: 'touch', pointerId: 1, button: 0, clientX: 150, clientY: 600, bubbles: true,
+    }))
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    canvas.dispatchEvent(new PointerEvent('pointermove', {
+      pointerType: 'touch', pointerId: 1, clientX: 150, clientY: 300, bubbles: true,
     }))
     await new Promise((resolve) => setTimeout(resolve, 400))
     canvas.dispatchEvent(new PointerEvent('pointerup', {
-      pointerType: 'touch', pointerId: 1, button: 0, clientX: 200, clientY: 400, bubbles: true,
+      pointerType: 'touch', pointerId: 1, clientX: 150, clientY: 300, bubbles: true,
     }))
     const after = [...window.__cube.cam.pos]
     return Math.hypot(after[0] - before[0], after[1] - before[1], after[2] - before[2])
   })
-  expect(distance).toBeGreaterThan(1)
+  await expect(page.locator('#joystick')).toBeHidden()
+  expect(moved).toBeGreaterThan(1)
 })
 
 test('phone mode auto-detects touch viewports and phone=0 opts out', async ({ browser }) => {

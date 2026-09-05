@@ -1,4 +1,5 @@
 import { config } from './config'
+import { Joystick } from './joystick'
 
 export interface InputHooks {
   togglePanel(): void
@@ -16,6 +17,8 @@ export interface FrameIntent {
   boost: boolean
   lookDX: number
   lookDY: number
+  // Rate-control scale for the movement vector; 1 for keyboard input.
+  magnitude?: number
 }
 
 const MOVE_CODES = new Set([
@@ -33,7 +36,8 @@ const MOVE_CODES = new Set([
 
 export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consume(): FrameIntent } {
   const held = new Set<string>()
-  const touches = new Set<number>()
+  const joy = new Joystick()
+  let joyId: number | null = null
   let dragging = false
   let mouseDragging = false
   let activePointerId: number | null = null
@@ -93,11 +97,17 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
     held.delete(e.code)
   })
 
-  // Phone mode: a touch held anywhere on the canvas drives the camera forward
-  // while the same finger's drag steers the view, so one gesture moves and
-  // looks at once. The speed slider is a separate element and does not count.
+  // Phone mode: a touch on the left half of the canvas spawns the floating
+  // joystick; every other touch (and the mouse) steers the view. Ending the
+  // joystick's pointer only retires the stick, an active look drag keeps going.
   const endDrag = (e?: PointerEvent): void => {
-    if (e && e.pointerType !== 'mouse') touches.delete(e.pointerId)
+    if (e && e.pointerId === joyId) {
+      joyId = null
+      joy.end()
+      if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId)
+      return
+    }
+    if (e && activePointerId !== null && e.pointerId !== activePointerId) return
     dragging = false
     mouseDragging = false
     canvas.classList.remove('grabbing')
@@ -110,13 +120,15 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
 
   window.addEventListener('blur', () => {
     held.clear()
-    touches.clear()
+    joyId = null
+    joy.end()
     endDrag()
   })
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) return
     held.clear()
-    touches.clear()
+    joyId = null
+    joy.end()
     lookDX = lookDY = 0
     endDrag()
   })
@@ -125,9 +137,23 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
     if (e.button !== 0) return
     const ae = document.activeElement
     if (ae instanceof HTMLElement && ae !== document.body) ae.blur()
+    if (
+      config.phoneMode &&
+      e.pointerType !== 'mouse' &&
+      joyId === null &&
+      e.clientX < canvas.clientWidth / 2
+    ) {
+      joyId = e.pointerId
+      try {
+        canvas.setPointerCapture(e.pointerId)
+      } catch {
+        // Pointer capture is best-effort; pointermove deltas still drive the stick.
+      }
+      joy.begin(e.clientX, e.clientY)
+      return
+    }
     dragging = true
     mouseDragging = e.pointerType === 'mouse'
-    if (!mouseDragging) touches.add(e.pointerId)
     activePointerId = e.pointerId
     lastX = e.clientX
     lastY = e.clientY
@@ -147,6 +173,10 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
   })
 
   canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerId === joyId) {
+      joy.move(e.clientX, e.clientY)
+      return
+    }
     if (!dragging || document.pointerLockElement === canvas) return
     const mdx = e.clientX - lastX
     const mdy = e.clientY - lastY
@@ -187,16 +217,21 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
 
   return {
     consume(): FrameIntent {
-      const forward = (held.has('KeyW') ? 1 : 0) - (held.has('KeyS') ? 1 : 0)
-      const strafe = (held.has('KeyD') ? 1 : 0) - (held.has('KeyA') ? 1 : 0)
+      const kForward = (held.has('KeyW') ? 1 : 0) - (held.has('KeyS') ? 1 : 0)
+      const kStrafe = (held.has('KeyD') ? 1 : 0) - (held.has('KeyA') ? 1 : 0)
       const down = held.has('ControlLeft') || held.has('ControlRight') || held.has('KeyC')
+      const kVertical = (held.has('Space') ? 1 : 0) - (down ? 1 : 0)
+      // Keyboard wins over the stick; the stick alone moves at its deflection.
+      const useKeys = kForward !== 0 || kStrafe !== 0 || kVertical !== 0
+      const stick = joy.stick()
       const intent: FrameIntent = {
-        forward: Math.max(forward, config.phoneMode && touches.size > 0 ? 1 : 0),
-        strafe,
-        vertical: (held.has('Space') ? 1 : 0) - (down ? 1 : 0),
+        forward: useKeys ? kForward : stick.forward,
+        strafe: useKeys ? kStrafe : stick.strafe,
+        vertical: kVertical,
         boost: held.has('ShiftLeft') || held.has('ShiftRight'),
         lookDX,
         lookDY,
+        magnitude: useKeys ? 1 : stick.magnitude,
       }
       lookDX = 0
       lookDY = 0

@@ -52,6 +52,7 @@ Switching models keeps your camera pose, spacing, and quality settings.
 | `F` | Toggle fullscreen (locks WASD/Space/Ctrl keys where supported) |
 | `Esc` | Close settings panel |
 | `?` button | Toggle hint box |
+| `⟲` button | Reset camera to the startup pose (hidden together with the HUD) |
 
 > Tip: in windowed mode `Ctrl+W` closes the tab; fullscreen mode (via `F`) also
 > prevents that, which is why the hint box mentions it.
@@ -62,12 +63,16 @@ On touch-first screens (coarse pointer, no hover, small viewport) the app
 switches to a phone layout automatically; `#phone=1` / `#phone=0` in the URL
 hash forces it on or off:
 
-- Touch and hold anywhere on the canvas to move forward; drag the same finger
-  to steer while moving.
-- A vertical slider on the left edge sets the move speed, with the current
-  speed shown above it.
+- A floating joystick spawns wherever you touch the left half of the canvas:
+  push it up/down to move forward/backward, left/right to strafe — the further
+  you push, the faster you go (up to the speed set on the slider). Release to
+  stop.
+- Drag a finger anywhere else to look around while moving.
+- A vertical slider on the left edge sets the maximum move speed, with the
+  current speed shown above it.
 - The speedometer dial and the hint box (with its `?` toggle) are hidden, and
   the color model radios move next to the color display.
+- The `⟲` button under the settings gear resets the camera to the startup pose.
 
 ### URL parameters
 
