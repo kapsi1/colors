@@ -1,4 +1,4 @@
-# 16,777,216 colors — RGB Cube Flythrough
+# 16,777,216 colors — Color Space Flythrough
 
 An interactive WebGL2 flythrough of the complete RGB color space, rendered as a
 256 × 256 × 256 lattice of colored spheres — one sphere for every one of the
