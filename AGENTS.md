@@ -1,3 +1,3 @@
 - Add JS regression tests for bug fixes
 - Add JS tests for new features
-- Update README.md, ARCHITECTURE.md, and PERFORMANCE.md with new features and performance improvements
+- Update README.md, and PERFORMANCE.md with new features and performance improvements

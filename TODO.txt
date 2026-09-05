@@ -12,7 +12,7 @@ acting as a minimap. Also show camera's cone of vision.
 [ ] add an option to see a HSL / HSV cylinder instead of RGB cube (see hsl_hsv.png).
   Add a color model select control in top left - to the left of the settings button.
 [ ] Remove axes from the main cube. Keep the cube outline, but make it a bit thicker and black.
-[ ] Add tests for existing features
+[ ] Add comprehensive tests for existing features
 [ ] In the top left box move the color swatch to the left, and add hex color display, inline
 [ ] When hiding the HUD, also hide all the other elements, like settings and help buttons
 [ ] Add an outer boundary, so that camera can't go where the cube won't be visible anymore because the distance is too big.
