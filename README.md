@@ -8,10 +8,9 @@ An interactive WebGL2 flythrough of the complete RGB color space, rendered as a
 
 Click any image for the full-resolution view.
 
-[<img src="screenshots/thumbs/1.jpg" width="25%" alt="RGB cube seen from a corner, with HUD and minimap">](screenshots/1.jpg)
-[<img src="screenshots/thumbs/2.jpg" width="25%" alt="HSV cylinder in a purple area">](screenshots/2.jpg)
-[<img src="screenshots/thumbs/3.jpg" width="25%" alt="Inside the HSL cylinder lattice, blue spheres up close">](screenshots/3.jpg)
-[<img src="screenshots/thumbs/4.jpg" width="25%" alt="Inside the HSL cylinder lattice, dark spheres">](screenshots/4.jpg)
+[<img src="screenshots/thumbs/1.jpg" width="33%" alt="RGB cube seen from a corner, with HUD and minimap">](screenshots/1.jpg)
+[<img src="screenshots/thumbs/2.jpg" width="33%" alt="HSV cylinder in a purple area">](screenshots/2.jpg)
+[<img src="screenshots/thumbs/3.jpg" width="33%" alt="Inside the HSL cylinder lattice, blue spheres up close">](screenshots/3.jpg)
 
 ## Color models
 
