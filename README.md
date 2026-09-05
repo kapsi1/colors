@@ -29,6 +29,9 @@ frame rate on target automatically.
   with a square color swatch spanning both to their left, car-style
   speedometer dial, and an isometric minimap showing camera position, viewing
   frustum, and nearest face projections.
+- **Outer boundary** — the camera is kept within 3.2 cube half-extents and half
+  the view distance, so the cube always stays on screen with its outline;
+  movement slides along the boundary instead of stopping dead.
 - **Shareable state** — the full camera pose and every setting are serialized
   into the URL hash and restored on load; copy a link to share an exact view.
 - **Settings panel** — spacing, radius, view distance, speed, sensitivity, FOV,

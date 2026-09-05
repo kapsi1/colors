@@ -140,6 +140,66 @@ test('faceTowards aims the camera at a point', () => {
   closeVec(cam.fwd, [-1, -1, -1].map(v => v / Math.sqrt(3)), 1e-6)
 })
 
+test('flying away from the cube stops at the visibility boundary', () => {
+  const cam = freshCam()
+  config.far = 200
+  cam.setOrientation(Math.PI / 2, 0)
+  const intent = { forward: 1, strafe: 0, vertical: 0, boost: false, lookDX: 0, lookDY: 0 }
+  for (let i = 0; i < 1200; i++) cam.update(1 / 60, intent)
+  const dist = () => cam.distanceToCube(config.spacing)
+  // min(3.2 half-extents, 0.6 view distance) with far=200 -> 0.6 * 200
+  assert.ok(Math.abs(dist() - 0.6 * config.far) < 1e-3, 'pressed against the boundary')
+  const xAfterApproach = cam.pos[0]
+  for (let i = 0; i < 120; i++) cam.update(1 / 60, intent)
+  assert.ok(Math.abs(dist() - 0.6 * config.far) < 1e-3, 'stays on the boundary')
+  assert.ok(Math.abs(cam.pos[0] - xAfterApproach) < 0.5, 'no further outward movement')
+  assert.ok(Math.abs(cam.pos[0] - (config.latticeHalf + 0.6 * config.far)) < 0.5)
+})
+
+test('movement slides along the boundary', () => {
+  const cam = freshCam()
+  config.far = 200
+  cam.setPose(config.latticeHalf * config.spacing + 200, 0, 0)
+  cam.setOrientation(Math.PI, 0)
+  const intent = { forward: 1, strafe: 0, vertical: 0, boost: false, lookDX: 0, lookDY: 0 }
+  for (let i = 0; i < 120; i++) cam.update(1 / 60, intent)
+  assert.ok(Math.abs(cam.distanceToCube(config.spacing) - 0.6 * config.far) < 1e-6)
+  assert.ok(cam.pos[2] > 10, 'moved tangentially along the boundary')
+})
+
+test('shrinking the view distance pulls the camera back inside', () => {
+  const cam = freshCam()
+  config.far = 600
+  cam.setPose(config.latticeHalf * config.spacing + 300, 0, 0)
+  cam.update(1 / 60, { forward: 0, strafe: 0, vertical: 0, boost: false, lookDX: 0, lookDY: 0 })
+  assert.ok(Math.abs(cam.distanceToCube(config.spacing) - 300) < 1e-9, 'inside is untouched')
+  config.far = 200
+  cam.update(1 / 60, { forward: 0, strafe: 0, vertical: 0, boost: false, lookDX: 0, lookDY: 0 })
+  assert.ok(Math.abs(cam.distanceToCube(config.spacing) - 0.6 * config.far) < 1e-9, 'pulled in')
+})
+
+test('the boundary follows the sphere spacing', () => {
+  const cam = freshCam()
+  config.spacing = 2
+  config.far = 1500
+  cam.setPose(config.latticeHalf * config.spacing + 900, 0, 0)
+  cam.update(1 / 60, { forward: 0, strafe: 0, vertical: 0, boost: false, lookDX: 0, lookDY: 0 })
+  assert.ok(
+    Math.abs(cam.pos[0] - config.latticeHalf * config.spacing * (1 + 3.2)) < 1e-6,
+    'cube-relative boundary applies when the view distance is generous',
+  )
+})
+
+test('the camera inside the cube is never clamped', () => {
+  const cam = freshCam()
+  config.far = 200
+  cam.setPose(100, 50, 25)
+  cam.update(1 / 60, { forward: 0, strafe: 0, vertical: 0, boost: false, lookDX: 0, lookDY: 0 })
+  assert.equal(cam.pos[0], 100)
+  assert.equal(cam.pos[1], 50)
+  assert.equal(cam.pos[2], 25)
+})
+
 test('the basis stays orthonormal after long mixed turning', () => {
   const cam = freshCam()
   for (let i = 0; i < 2000; i++) {

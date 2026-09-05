@@ -6,6 +6,12 @@ const FWD0: vec3 = vec3.fromValues(0, 0, -1)
 const RIGHT0: vec3 = vec3.fromValues(1, 0, 0)
 const UP0: vec3 = vec3.fromValues(0, 1, 0)
 
+// The boundary keeps the whole cube on screen: 3.2 half-extents let the corner
+// view of the cube fit the field of view with a margin, and half the view
+// distance keeps it clear of the far plane and the fog.
+const BOUNDARY_HALF_EXTENTS = 3.2
+const BOUNDARY_VIEW_FRACTION = 0.6
+
 // The camera keeps its full orientation in a quaternion and mouse deltas turn
 // it around its own right/up axes. Vertical turning therefore continues past
 // the old +/-90 degree pitch bounds like horizontal turning, rolling over
@@ -102,6 +108,7 @@ export class Camera {
     this.pos[0] += this.vel[0] * dt
     this.pos[1] += this.vel[1] * dt
     this.pos[2] += this.vel[2] * dt
+    this.clampToBoundary()
     this.updateView()
   }
 
@@ -121,6 +128,33 @@ export class Camera {
     vec3.transformQuat(this.fwd, FWD0, this.orient)
     vec3.transformQuat(this.right, RIGHT0, this.orient)
     vec3.transformQuat(this.up, UP0, this.orient)
+  }
+
+  // The camera is kept within the boundary so the cube always stays visible
+  // with its outline. The position is projected back onto the boundary and the
+  // outward velocity component is removed, so movement slides along it.
+  private clampToBoundary(): void {
+    const half = config.latticeHalf * config.spacing
+    const maxDist = Math.min(BOUNDARY_HALF_EXTENTS * half, BOUNDARY_VIEW_FRACTION * config.far)
+    const cx = Math.min(half, Math.max(-half, this.pos[0]))
+    const cy = Math.min(half, Math.max(-half, this.pos[1]))
+    const cz = Math.min(half, Math.max(-half, this.pos[2]))
+    const dx = this.pos[0] - cx
+    const dy = this.pos[1] - cy
+    const dz = this.pos[2] - cz
+    const dist = Math.hypot(dx, dy, dz)
+    if (dist <= maxDist) return
+    const scale = maxDist / dist
+    vec3.set(this.pos, cx + dx * scale, cy + dy * scale, cz + dz * scale)
+    const outward = (this.vel[0] * dx + this.vel[1] * dy + this.vel[2] * dz) / dist
+    if (outward > 0) {
+      vec3.set(
+        this.vel,
+        this.vel[0] - (dx / dist) * outward,
+        this.vel[1] - (dy / dist) * outward,
+        this.vel[2] - (dz / dist) * outward,
+      )
+    }
   }
 
   private updateView(): void {
