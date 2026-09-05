@@ -53,6 +53,24 @@
         vertical-align: -2px;
         background: transparent;
       }
+      #minimap-wrap {
+        position: fixed;
+        right: 10px;
+        bottom: 60px;
+        width: clamp(140px, 20vw, 210px);
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.55);
+        color: #444;
+        text-align: center;
+        font: 11px/1.5 ui-monospace, Consolas, monospace;
+        padding-bottom: 7px;
+      }
+      #minimap {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1;
+      }
       #hint {
         position: fixed;
         bottom: 10px;
@@ -165,6 +183,10 @@
       Please use a current version of Chrome, Edge, Firefox, or Safari.
     </div>
     <div id="hud">
+      <div id="minimap-wrap">
+        <canvas id="minimap" role="img" aria-label="RGB cube minimap showing camera position and viewing cone"></canvas>
+        camera &middot; viewing cone
+      </div>
       <div id="fps">
         <div id="fps-line">-- fps · -- ms</div>
         <div id="fps-count">--</div>

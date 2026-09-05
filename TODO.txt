@@ -1,4 +1,4 @@
-[ ] a small semi-transparent color cube in in the corner that shows camera's current position as a dot,
+[x] a small semi-transparent color cube in in the corner that shows camera's current position as a dot,
 acting as a minimap. Also show camera's cone of vision.
 [x] while mouse dragging, don't move the cursor, so it's in the same position after releasing the mouse button
 [ ] HUD improvements (to be defined)

@@ -3,6 +3,7 @@ import { Camera } from './camera'
 import { initInput } from './input'
 import { LodController } from './lod'
 import { Hud } from './hud'
+import { Minimap } from './minimap'
 import { SettingsPanel, rgbToHex, hexToRgb } from './settings'
 import { createGL, queryMaxPointSize, type FrameState } from './renderer/gl'
 import { SpherePoints } from './renderer/spherePoints'
@@ -149,6 +150,7 @@ function main(): void {
 
   window.__cube = { cam, lod, config, gl, renders: 0 }
   const hud = new Hud()
+  const minimap = new Minimap()
   const settings = new SettingsPanel({
     getLod: () => ({ auto: lod.auto, k: lod.k }),
     setLodManual: (k) => lod.setManual(k),
@@ -312,6 +314,7 @@ function main(): void {
 
     window.__cube!.renders = renders
     hud.update(now, lod.emaMs, k, lod.auto, cameraRgb())
+    if (hud.visible) minimap.update(cam, canvas.width / canvas.height)
     settings.sync()
 
     if (now - lastUrlWrite >= 500) {
