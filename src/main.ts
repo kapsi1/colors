@@ -357,7 +357,7 @@ function main(): void {
     settings.sync()
 
     // Updating browser history while dragging can interrupt frame delivery.
-    // Persist once movement settles; Copy link explicitly serializes below.
+    // Persist once movement settles;
     if (now - lastUrlWrite >= 500 && now - lastSceneChange >= 300) {
       lastUrlWrite = now
       const hash = serializeState()

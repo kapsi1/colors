@@ -108,7 +108,6 @@ export class SettingsPanel {
       <div style="margin:4px 0 2px;color:#666;font-size:11px;line-height:1.4;">
         R = distance (white = close, scale 0&ndash;8 units) &middot; G = |normal.x| &middot; B = |normal.y|
       </div>
-      <button id="set-copy" type="button">Copy link</button>
     `
     const q = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T
     this.inp.spacing = q<HTMLInputElement>('set-spacing')
@@ -196,16 +195,6 @@ export class SettingsPanel {
     this.inp.debug.addEventListener('change', () => {
       config.debugView = this.inp.debug.checked
       this.sync(true)
-    })
-    this.copyBtn.addEventListener('click', () => {
-      const clip = navigator.clipboard
-      if (!clip) return
-      void clip.writeText(this.lodHooks.getShareUrl()).then(() => {
-        this.copyBtn.textContent = 'Copied!'
-        window.setTimeout(() => {
-          this.copyBtn.textContent = 'Copy link'
-        }, 1500)
-      })
     })
   }
 

@@ -6,9 +6,9 @@ acting as a minimap. Also show camera's cone of vision.
     - don't show frame ms, only FPS
     - remove second line
     - remove "camera" from the third line
-  - in mini cube reduce margin around the cube, and remove the text below
-  - move the settings icon below the top left box
-  - add a "?" icon below the settings icon, that will toggle the help info (bottom box)
+    - add a speedometer similar to one in a car
+  - in minimap reduce the margin around the cube, and remove the text below
+  - add a "?" icon below the settings icon, that will toggle the hint box
 [ ] add an option to see a HSL / HSV cylinder instead of RGB cube (see hsl_hsv.png).
-  Add a radio button color model select in top left - between the info box and settings menu.
-  Move the existing buttons down.
+  Add a color model select control in top left - to the left of the settings button.
+[ ] Remove axes from the main cube. Keep the cube outline, but make it a bit thicker and black.

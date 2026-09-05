@@ -4,7 +4,7 @@ Automatic LOD is enabled by default. In Settings (Tab), **Target FPS** defaults
 to 60 and can be raised to 144. **Minimum auto scale** limits automatic
 resolution reduction relative to the selected render scale (50% by default).
 Disable auto LOD, or press 1–5, to use fixed detail and resolution; press 0 to
-return to automatic quality. Copy link includes these settings.
+return to automatic quality.
 
 The renderer culls blocks outside the camera's view before submitting spheres,
 caches the minimap background, and reuses nearby sphere data while turning.
