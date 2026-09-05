@@ -35,6 +35,7 @@ export class Hud {
 
   setVisible(v: boolean): void {
     this.root.hidden = !v
+    this.help.hidden = !v
   }
 
   toggleHints(): void {

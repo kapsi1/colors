@@ -109,7 +109,7 @@ camera poses, a full turn, varied FOV/aspect ratios, and near/eye-plane crossing
 | `1`–`5` | Manual LOD stride (1, 2, 4, 8, 16) |
 | `0` | Return to automatic LOD |
 | `Tab` | Toggle settings panel |
-| `H` | Toggle HUD (also hides minimap) |
+| `H` | Toggle HUD — hides the minimap, info box, hint, and the gear/help buttons |
 | `F` | Toggle fullscreen (locks WASD/Space/Ctrl keys where supported) |
 | `Esc` | Close settings panel |
 | `?` button | Toggle hint box |

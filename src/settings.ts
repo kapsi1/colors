@@ -74,6 +74,11 @@ export class SettingsPanel {
     if (ae instanceof HTMLElement && this.panel.contains(ae)) ae.blur()
   }
 
+  setChromeVisible(v: boolean): void {
+    this.gear.hidden = !v
+    if (!v) this.close()
+  }
+
   private row(id: string, label: string, control: string): string {
     return `<div class="row"><span>${label}</span>${control}<span class="val" id="v-${id}"></span></div>`
   }

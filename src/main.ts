@@ -166,9 +166,14 @@ function main(): void {
     setLodAuto: () => lod.setAuto(),
   })
   const input = initInput(canvas, {
-    togglePanel: () => settings.toggle(),
+    togglePanel: () => {
+      if (hud.visible) settings.toggle()
+    },
     closePanel: () => settings.close(),
-    toggleHud: () => hud.setVisible(!hud.visible),
+    toggleHud: () => {
+      hud.setVisible(!hud.visible)
+      settings.setChromeVisible(hud.visible)
+    },
     setLodManual: (k) => lod.setManual(k),
     setLodAuto: () => lod.setAuto(),
     toggleFullscreen: () => void toggleFullscreen(),

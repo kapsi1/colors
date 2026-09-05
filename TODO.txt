@@ -14,5 +14,7 @@ acting as a minimap. Also show camera's cone of vision.
 [x] Remove axes from the main cube. Keep the cube outline, but make it a bit thicker and black.
 [ ] Add comprehensive tests for existing features
 [x] In the top left box move the color swatch to the left, and add hex color display, inline
-[ ] When hiding the HUD, also hide all the other elements, like settings and help buttons
+[x] When hiding the HUD, also hide all the other elements, like settings and help buttons
 [ ] Add an outer boundary, so that camera can't go where the cube won't be visible anymore because the distance is too big.
+[ ] Moving mouse left/right keeps turning the camera, but up/down is bounded. There's no "up" and "down" in this space, so make
+  up/down mouse work the same as left right.

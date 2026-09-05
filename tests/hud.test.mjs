@@ -68,6 +68,22 @@ test('hud.ts targets the renamed info ids', () => {
   assert.ok(!src.includes("'fps-line'") && !src.includes("'fps-cam'"), 'old ids gone')
 })
 
+test('Hud setVisible hides the help button together with the HUD', () => {
+  const { hud, els: e } = newHud()
+  hud.setVisible(false)
+  assert.equal(e.hud.hidden, true)
+  assert.equal(e.help.hidden, true)
+  hud.setVisible(true)
+  assert.equal(e.hud.hidden, false)
+  assert.equal(e.help.hidden, false)
+})
+
+test('main hides settings chrome with the HUD and gates Tab on HUD visibility', () => {
+  const src = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8')
+  assert.match(src, /settings\.setChromeVisible\(hud\.visible\)/, 'H toggles settings chrome')
+  assert.match(src, /if \(hud\.visible\) settings\.toggle\(\)/, 'Tab cannot open the hidden panel')
+})
+
 test('Hud update shows rgb, spanning swatch color and hex below it', () => {
   const { hud, els: e } = newHud()
   hud.update(0, 16, 10, [0, 0, 0])
