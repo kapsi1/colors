@@ -64,6 +64,75 @@
       margin-top: 4px;
     }
 
+    #speed-slider {
+      display: none;
+      pointer-events: auto;
+      position: fixed;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 5;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #speed-value {
+      font: bold 12px/1.2 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      color: #222;
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      border-radius: 6px;
+      padding: 2px 7px;
+      text-align: center;
+    }
+
+    #speed-value::after {
+      content: "u/s";
+      display: block;
+      font-size: 8px;
+      font-weight: normal;
+      color: #777;
+    }
+
+    #speed-track {
+      position: relative;
+      box-sizing: border-box;
+      width: 26px;
+      height: clamp(140px, 34vh, 320px);
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      border-radius: 13px;
+      touch-action: none;
+      cursor: pointer;
+    }
+
+    #speed-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      border-radius: 12px;
+      background: rgba(75, 89, 107, 0.35);
+    }
+
+    #speed-thumb {
+      position: absolute;
+      left: 50%;
+      top: 20%;
+      box-sizing: border-box;
+      width: 22px;
+      height: 22px;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border: 1px solid rgba(0, 0, 0, 0.35);
+      border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+    }
+
     #info-cam {
       display: flex;
       gap: 6px;
@@ -227,6 +296,30 @@
     [hidden] {
       display: none !important;
     }
+
+    /* Phone mode: touch-first chrome. The slider replaces the speedometer,
+       desktop-only help is dropped, and the info box widens with the color
+       model control moved beside the color display. */
+    body.phone #speed-slider { display: flex; }
+    body.phone #speedo { display: none; }
+    body.phone #hint,
+    body.phone #help { display: none; }
+    body.phone #info {
+      right: 54px;
+      width: auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      column-gap: 10px;
+      row-gap: 2px;
+      font-size: 11px;
+    }
+    body.phone #info-fps { flex: 1 0 100%; }
+    body.phone #model-row { display: contents; }
+    body.phone #info-cam,
+    body.phone #cam-text { min-width: 0; overflow: hidden; }
+    body.phone #color-model { display: flex; flex: 0 0 auto; flex-direction: row; gap: 8px; }
+    body.phone #color-model legend { display: none; }
   </style>
 </head>
 
@@ -251,11 +344,18 @@
       </div>
       <div id="model-row">
         <canvas id="speedo" role="img" aria-label="Maximum move speed dial, controlled with the mouse wheel"></canvas>
-        <fieldset id="color-model"><legend>Color model</legend>
+        <fieldset id="color-model" aria-label="Color model"><legend>Color model</legend>
           <label><input type="radio" name="color-model" value="rgb" checked>RGB</label>
           <label><input type="radio" name="color-model" value="hsl">HSL</label>
           <label><input type="radio" name="color-model" value="hsv">HSV</label>
         </fieldset>
+      </div>
+    </div>
+    <div id="speed-slider" role="slider" aria-label="Move speed" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80">
+      <div id="speed-value">--</div>
+      <div id="speed-track">
+        <div id="speed-fill"></div>
+        <div id="speed-thumb"></div>
       </div>
     </div>
     <div id="hint">

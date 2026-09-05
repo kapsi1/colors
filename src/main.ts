@@ -6,6 +6,8 @@ import { LodController } from './lod'
 import { Hud } from './hud'
 import { Minimap } from './minimap'
 import { SettingsPanel, rgbToHex, hexToRgb } from './settings'
+import { initPhoneMode } from './phone'
+import { SpeedSlider } from './speedSlider'
 import { createGL, queryMaxPointSize, type FrameState } from './renderer/gl'
 import { SpherePoints } from './renderer/spherePoints'
 import { SphereQuads } from './renderer/sphereQuads'
@@ -125,6 +127,8 @@ function main(): void {
   if (shade !== null) config.shading = shade
   const axes = flagParam('axes')
   if (axes !== null) config.axes = axes
+  const phoneParam = flagParam('phone')
+  initPhoneMode(phoneParam)
   if (params.get('debug') === '1') config.debugView = true
   const model = params.get('model')
   if (model === 'rgb' || model === 'hsl' || model === 'hsv') config.colorModel = model
@@ -169,6 +173,7 @@ function main(): void {
     })
   }
   const hud = new Hud()
+  const speedSlider = new SpeedSlider()
   const minimap = new Minimap()
   const settings = new SettingsPanel({
     getShareUrl: () => `${location.origin}${location.pathname}${location.search}${serializeState()}`,
@@ -246,6 +251,7 @@ function main(): void {
     if (!config.shading) parts.push('shade=0')
     if (!config.axes) parts.push('axes=0')
     if (config.debugView) parts.push('debug=1')
+    if (phoneParam !== null) parts.push(`phone=${phoneParam ? '1' : '0'}`)
     if (!lod.auto) parts.push(`k=${lod.k}`)
     if (quadsDisabled) parts.push('quads=0')
     return `#${parts.join('&')}`
@@ -360,6 +366,7 @@ function main(): void {
     window.__cube!.submitted = renderer.points.submitted
     previousRendered = dirty
     hud.update(now, lod.emaMs, config.baseSpeed, cameraColor(cam.pos), cameraValueText(cam.pos))
+    speedSlider.refresh()
     if (hud.visible) minimap.update(cam, canvas.width / canvas.height)
     settings.sync()
 

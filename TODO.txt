@@ -19,3 +19,9 @@ acting as a minimap. Also show camera's cone of vision.
 [x] Add an outer boundary, so that camera can't go where the cube won't be visible anymore because the distance is too big.
 [x] Moving mouse left/right keeps turning the camera, but up/down is bounded. There's no "up" and "down" in this space, so make
   up/down mouse work the same as left right.
+[x] Add a phone mode:
+  - Move forward on touch
+  - Add a vertical slider on the left edge of the screen, to control the speed
+  - Hide the speedometer, display speed at the top of the speed slider
+  - Make the info box wider and less tall. Move the color model control to the right of the current color display.
+  - Don't show the help info or the button to toggle it

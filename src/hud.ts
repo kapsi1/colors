@@ -51,7 +51,8 @@ export class Hud {
     rgb: [number, number, number] | null,
     valueText: string | null = null,
   ): void {
-    this.speedo.update(nowMs, speed)
+    // The phone-mode slider shows the speed instead of the dial.
+    if (!config.phoneMode) this.speedo.update(nowMs, speed)
     if (nowMs - this.lastUpdate < 250) return
     this.lastUpdate = nowMs
     // The box is sampled at 4 Hz; touch the DOM only when a value moved.

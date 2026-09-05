@@ -95,12 +95,30 @@ render loop reads it. UI modules (`hud`, `minimap`, `speedometer`, `settings`)
 are passive DOM updaters fed from the loop; `main.ts` wires them together with
 explicit hooks.
 
+### Phone mode
+
+`phone.ts` decides whether the touch-first layout applies: forced by the
+`phone=1`/`phone=0` hash parameter, otherwise derived from
+`(pointer: coarse) and (hover: none) and (max-width: 1024px)` and kept in sync
+via a `matchMedia` change listener. The decision lives in
+`config.phoneMode` and is mirrored onto a `body.phone` class; all layout
+switching is CSS on that class. In phone mode:
+
+- A touch held on the canvas drives the camera forward while the same drag
+  still steers the view (`input.ts` counts active touch pointers).
+- The speedometer dial is replaced by a vertical `SpeedSlider` on the left
+  screen edge with the speed shown above the track; the slider maps track
+  position to speed on the same logarithmic scale as the settings panel.
+- The hint box and its `?` toggle are removed, and the info box stretches
+  across the width with the color model radios beside the color display.
+
 ## File structure
 
 ```
 .
 ├── index.html                  # Page skeleton + all CSS: canvas, HUD, minimap,
-│                               #   settings panel, hint box, WebGL2 fallback
+│                               #   speed slider, settings panel, hint box,
+│                               #   phone-mode overrides, WebGL2 fallback
 ├── package.json                # Scripts and dependencies (gl-matrix only)
 ├── tsconfig.json               # Strict ES2022 TypeScript config (no emit)
 ├── vite.config.ts              # Vite config (relative base for static deploys)
@@ -115,8 +133,13 @@ explicit hooks.
 │   │                           #   vertical turning, screen-axis movement,
 │   │                           #   smoothed velocity, boundary and matrices
 │   ├── input.ts                # Keyboard/pointer/wheel handling → FrameIntent;
-│   │                           #   pointer lock with capture fallback, hooks for
+│   │                           #   pointer lock with capture fallback, touch
+│   │                           #   forward in phone mode, hooks for
 │   │                           #   Tab/Esc/F/H/digit shortcuts
+│   ├── phone.ts                # Phone-mode detection: phone=1/0 override or
+│   │                           #   pointer/hover/width media query, body class
+│   ├── speedSlider.ts          # Phone-mode vertical speed slider on the left
+│   │                           #   edge, logarithmic mapping, speed readout
 │   ├── lod.ts                  # Automatic LOD controller: EMA frame timing,
 │   │                           #   GPU/CPU work budget, scale steps, distance
 │   │                           #   stride with hysteresis, manual override
@@ -154,8 +177,13 @@ explicit hooks.
     ├── loadTs.mjs              # node-side TS loader shared by tests
     ├── camera.test.mjs         # node:test: camera look/movement/boundary regressions
     ├── hud.test.mjs            # node:test: swatch left, model value + lowercase hex, outside-cube, throttling
+    ├── phone.test.mjs          # node:test: phone detection + body class, touch
+    │                           #   forward, slider mapping, phone CSS presence
     ├── performance.test.mjs    # node:test: LOD, culling, GPU query semantics
     ├── outline.test.mjs        # node:test: outline edges, near-plane clipping
     ├── outline.spec.mjs        # Playwright: outline ribbon width and color
+    ├── colorModel.spec.mjs     # Playwright: model switching, minimap, hash links
+    ├── phone.spec.mjs          # Playwright: phone layout, slider drag, touch
+    │                           #   forward, auto detection and phone=0 opt-out
     └── sphereQuads.spec.mjs    # Playwright: shader pixels vs. analytic rays
 ```

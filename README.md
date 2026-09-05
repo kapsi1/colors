@@ -56,6 +56,19 @@ Switching models keeps your camera pose, spacing, and quality settings.
 > Tip: in windowed mode `Ctrl+W` closes the tab; fullscreen mode (via `F`) also
 > prevents that, which is why the hint box mentions it.
 
+### Phone mode
+
+On touch-first screens (coarse pointer, no hover, small viewport) the app
+switches to a phone layout automatically; `#phone=1` / `#phone=0` in the URL
+hash forces it on or off:
+
+- Touch and hold anywhere on the canvas to move forward; drag the same finger
+  to steer while moving.
+- A vertical slider on the left edge sets the move speed, with the current
+  speed shown above it.
+- The speedometer dial and the hint box (with its `?` toggle) are hidden, and
+  the color model radios move next to the color display.
+
 ### URL parameters
 
 All state lives in the URL hash (`#key=value&…`) and round-trips through the
@@ -81,6 +94,7 @@ settings panel — the panel updates the hash, and a hash updates the panel.
 | `auto` | `auto=1` | Force automatic LOD on |
 | `quads` | `quads=0` | Disable near-field quad pass entirely |
 | `panel` | `panel=1` | Open the settings panel on load |
+| `phone` | `phone=1` | Force phone mode on/off (`1`/`0`); without it the mode is auto-detected |
 
 
 ## License

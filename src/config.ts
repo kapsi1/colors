@@ -28,6 +28,7 @@ export interface Config {
   shading: boolean
   axes: boolean
   debugView: boolean
+  phoneMode: boolean
   lodValues: number[]
   emaAlpha: number
   lodEvalMs: number
@@ -67,6 +68,7 @@ export const config: Config = {
   shading: true,
   axes: true,
   debugView: false,
+  phoneMode: false,
   lodValues: [1, 2, 4, 8, 16],
   emaAlpha: 0.1,
   lodEvalMs: 250,

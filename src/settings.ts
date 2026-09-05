@@ -11,11 +11,11 @@ const SPEED_MIN = config.minSpeed
 const SPEED_MAX = config.maxSpeed
 const LOG_SPAN = Math.log(SPEED_MAX / SPEED_MIN)
 
-function speedToT(v: number): number {
+export function speedToT(v: number): number {
   return Math.log(v / SPEED_MIN) / LOG_SPAN
 }
 
-function tToSpeed(t: number): number {
+export function tToSpeed(t: number): number {
   return SPEED_MIN * Math.exp(t * LOG_SPAN)
 }
 

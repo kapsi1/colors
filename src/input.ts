@@ -33,6 +33,7 @@ const MOVE_CODES = new Set([
 
 export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consume(): FrameIntent } {
   const held = new Set<string>()
+  const touches = new Set<number>()
   let dragging = false
   let mouseDragging = false
   let activePointerId: number | null = null
@@ -92,7 +93,11 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
     held.delete(e.code)
   })
 
-  const endDrag = (): void => {
+  // Phone mode: a touch held anywhere on the canvas drives the camera forward
+  // while the same finger's drag steers the view, so one gesture moves and
+  // looks at once. The speed slider is a separate element and does not count.
+  const endDrag = (e?: PointerEvent): void => {
+    if (e && e.pointerType !== 'mouse') touches.delete(e.pointerId)
     dragging = false
     mouseDragging = false
     canvas.classList.remove('grabbing')
@@ -105,11 +110,13 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
 
   window.addEventListener('blur', () => {
     held.clear()
+    touches.clear()
     endDrag()
   })
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) return
     held.clear()
+    touches.clear()
     lookDX = lookDY = 0
     endDrag()
   })
@@ -120,10 +127,15 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
     if (ae instanceof HTMLElement && ae !== document.body) ae.blur()
     dragging = true
     mouseDragging = e.pointerType === 'mouse'
+    if (!mouseDragging) touches.add(e.pointerId)
     activePointerId = e.pointerId
     lastX = e.clientX
     lastY = e.clientY
-    canvas.setPointerCapture(e.pointerId)
+    try {
+      canvas.setPointerCapture(e.pointerId)
+    } catch {
+      // Pointer capture is best-effort; pointermove deltas still steer.
+    }
     canvas.classList.add('grabbing')
     if (mouseDragging) {
       try {
@@ -179,7 +191,7 @@ export function initInput(canvas: HTMLCanvasElement, hooks: InputHooks): { consu
       const strafe = (held.has('KeyD') ? 1 : 0) - (held.has('KeyA') ? 1 : 0)
       const down = held.has('ControlLeft') || held.has('ControlRight') || held.has('KeyC')
       const intent: FrameIntent = {
-        forward,
+        forward: Math.max(forward, config.phoneMode && touches.size > 0 ? 1 : 0),
         strafe,
         vertical: (held.has('Space') ? 1 : 0) - (down ? 1 : 0),
         boost: held.has('ShiftLeft') || held.has('ShiftRight'),
